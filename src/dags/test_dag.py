@@ -19,7 +19,7 @@ dag = DAG(
 # priority_weight has type int in Airflow DB, uses the maximum.
 t1 = BashOperator(
     task_id='echo',
-    bash_command='echo test',
+    bash_command='echo test test 2',
     dag=dag,
     depends_on_past=False,
     priority_weight=2**31 - 1,
