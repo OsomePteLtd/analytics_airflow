@@ -13,7 +13,7 @@ aiosignal==1.2.0
 alembic==1.7.7
 amqp==5.1.0
 anyio==3.5.0
-apache-airflow==2.2.5 # replaced apache-airflow==2.2.5+composer
+apache-airflow==2.4.2 # replaced apache-airflow==2.4.2+composer
 apache-airflow-providers-apache-beam==4.0.0
 apache-airflow-providers-cncf-kubernetes==3.0.0
 apache-airflow-providers-dbt-cloud==2.2.0
