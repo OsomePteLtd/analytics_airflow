@@ -10,7 +10,7 @@ default_args = {
 }
 
 dag = DAG(
-    'test_sync_dag',
+    'completely new dag',
     default_args=default_args,
     description='just a dag to test that GH sync works',
     schedule_interval=None,
