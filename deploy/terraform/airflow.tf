@@ -5,8 +5,12 @@ terraform {
     google = {
       source = "hashicorp/google"
       version = "4.44.1"
+      }
     }
-  }
+  backend "gcs" {
+   bucket  = "osome-tfstate-analytics"
+   prefix  = "terraform/cloud-composer/state"
+   }
 }
 
 
