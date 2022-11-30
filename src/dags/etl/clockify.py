@@ -2,11 +2,14 @@ import airflow
 from airflow import DAG
 from datetime import timedelta
 from utils.hooks.clockify_hook import ClockifyHook
+from utils.config import get_dag_folder_path
 from airflow.operators.python import PythonOperator
+
 import sys
 import os
 
-dag_name = os.path.basename(sys.argv[0][:-3])
+DAG_NAME = 'clockify'
+WORKING_DIRECTORY = get_dag_folder_path(DAG_NAME) + 'temp_extracts/'
 
 default_args = {
     'start_date': airflow.utils.dates.days_ago(0),
@@ -15,7 +18,7 @@ default_args = {
 }
 
 clockify_dag = DAG(
-    dag_id=dag_name,
+    dag_id=DAG_NAME,
     default_args=default_args,
     description='Integration with clockify to extract detailed reports to BQ',
     schedule_interval='@once',
@@ -23,6 +26,10 @@ clockify_dag = DAG(
 
 
 def clockify_to_fs(**kwargs):
+
+    context = kwargs
+    run_id = context['dag_run'].run_id
+
     clockify = ClockifyHook()
 
     report_df = clockify.get_detailed_report_df(
@@ -30,7 +37,8 @@ def clockify_to_fs(**kwargs):
         end_date='2022-11-15 23:59:59'
     )
 
-    report_df.to_csv('test_save.csv', index=False)
+    filename = f'{WORKING_DIRECTORY}{run_id}.csv'
+    report_df.to_csv(filename, index=False)
 
 
 def fs_to_bq(**kwargs):

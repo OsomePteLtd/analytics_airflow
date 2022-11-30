@@ -30,7 +30,7 @@ class ClockifyHook(BaseHook):
             self.workspace_id = self.conn_extra['workspace_id']
 
         logging.info(f"Clockify hook initialized with API key '{self._api_key[:5]}***' "
-                     f"and workspace id {self.workspace_id}")
+                     f"and workspace_id '{self.workspace_id}'")
 
         super().__init__(*args, **kwargs)
 
