@@ -4,6 +4,10 @@ from datetime import timedelta
 from utils.hooks.clockify_hook import ClockifyHook
 from utils.config import get_dag_folder_path
 from airflow.operators.python import PythonOperator
+from pathlib import Path
+
+
+
 
 import sys
 import os
@@ -36,6 +40,10 @@ def clockify_to_fs(**kwargs):
         start_date='2022-10-01 00:00:00',
         end_date='2022-11-15 23:59:59'
     )
+
+    if not os.path.exists(WORKING_DIRECTORY):
+        path = Path(WORKING_DIRECTORY)
+        path.mkdir(parents=True, exist_ok=True)
 
     filename = f'{WORKING_DIRECTORY}{run_id}.csv'
     report_df.to_csv(filename, index=False)
