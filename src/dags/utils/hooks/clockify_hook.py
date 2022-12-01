@@ -71,12 +71,14 @@ class ClockifyHook(BaseHook):
                 "exportType": export_type
             }
 
+        logging.info(f'Requesting a detailed report from {body["dateRangeStart"]} to {body["dateRangeEnd"]}')
         response = requests.post(
             url=self.reports_url + detailed_report_endpoint,
             headers=self._auth_headers,
             json=body
 
         )
+        logging.info(f'Status code: {response.status_code}, returning a response object')
 
         return response
 

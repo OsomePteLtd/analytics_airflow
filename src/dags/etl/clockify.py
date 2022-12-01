@@ -1,19 +1,16 @@
 import airflow
 from airflow import DAG
-from datetime import timedelta
-from utils.hooks.clockify_hook import ClockifyHook
-from utils.config import get_dag_folder_path
 from airflow.operators.python import PythonOperator
-from pathlib import Path
+from airflow.exceptions import AirflowSkipException
 
+from utils.hooks.clockify_hook import ClockifyHook
+from utils.utils import get_dag_workdir_path_from_context
 
+import logging
+from datetime import timedelta, datetime
 
-
-import sys
-import os
-
-DAG_NAME = 'clockify'
-WORKING_DIRECTORY = get_dag_folder_path(DAG_NAME) + 'temp_extracts/'
+SUB_PATH = 'temp_extracts/'
+END_DATE_KEY = 'end_date'
 
 default_args = {
     'start_date': airflow.utils.dates.days_ago(0),
@@ -22,7 +19,7 @@ default_args = {
 }
 
 clockify_dag = DAG(
-    dag_id=DAG_NAME,
+    dag_id='clockify',
     default_args=default_args,
     description='Integration with clockify to extract detailed reports to BQ',
     schedule_interval='@once',
@@ -30,23 +27,47 @@ clockify_dag = DAG(
 
 
 def clockify_to_fs(**kwargs):
-
+    # getting things from context
     context = kwargs
     run_id = context['dag_run'].run_id
+    ti = context['ti']
 
+    # initializing workdir and hook
+    workdir = get_dag_workdir_path_from_context(context, SUB_PATH)
     clockify = ClockifyHook()
 
+    # getting previous end date and creating a new one
+    prev_end_date = ti.xcom_pull(END_DATE_KEY, include_prior_dates=True)
+
+    logging.info(f'prev date = {prev_end_date}')
+
+    if prev_end_date:
+        start_date = prev_end_date[0]
+    else:
+        start_date = '2022-10-01 00:00:00'  # default start_date
+
+    end_date = datetime.strptime(start_date, '%Y-%m-%d %H:%M:%S') + timedelta(days=5)
+    # end_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).strftime('%Y-%m-%d %H:%M:%S')
+
+    if start_date == end_date:
+
+        logging.warning('Start date and end date are the same, skipping')
+        raise AirflowSkipException
+
+    # requesting a report
+
     report_df = clockify.get_detailed_report_df(
-        start_date='2022-10-01 00:00:00',
-        end_date='2022-11-15 23:59:59'
+        start_date=start_date,
+        end_date=end_date
     )
 
-    if not os.path.exists(WORKING_DIRECTORY):
-        path = Path(WORKING_DIRECTORY)
-        path.mkdir(parents=True, exist_ok=True)
-
-    filename = f'{WORKING_DIRECTORY}{run_id}.csv'
+    # saving to workdir
+    filename = f'{workdir}{run_id}.csv'
     report_df.to_csv(filename, index=False)
+    logging.info(f'Saved extracted df to {filename}')
+
+    # passing current end date to xcom
+    ti.xcom_push(key=END_DATE_KEY, value=end_date)
 
 
 def fs_to_bq(**kwargs):
@@ -55,6 +76,11 @@ def fs_to_bq(**kwargs):
 
 def bq_transform(**kwargs):
     print('bq_transform')
+
+
+def cleaner(**kwargs):
+    # remove temp files that were uploaded and xcom variables
+    pass
 
 
 with clockify_dag as dag:
@@ -73,4 +99,10 @@ with clockify_dag as dag:
         provide_context=True,
         python_callable=bq_transform)
 
-    extract >> load >> transform
+    cleaning_trails = PythonOperator(
+        task_id='cleaning_trails',
+        provide_context=True,
+        python_callable=cleaner
+    )
+
+    extract >> load >> transform >> cleaning_trails
