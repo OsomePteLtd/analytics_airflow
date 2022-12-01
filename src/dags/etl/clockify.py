@@ -42,7 +42,7 @@ def clockify_to_fs(**kwargs):
     logging.info(f'prev date = {prev_end_date}')
 
     if prev_end_date:
-        start_date = prev_end_date[0]
+        start_date = prev_end_date if type(prev_end_date) == str else prev_end_date[0]
     else:
         start_date = '2022-10-01 00:00:00'  # default start_date
 
