@@ -37,7 +37,7 @@ def clockify_to_fs(**kwargs):
     clockify = ClockifyHook()
 
     # getting previous end date and creating a new one
-    prev_end_date = ti.xcom_pull(END_DATE_KEY, include_prior_dates=True)
+    prev_end_date = ti.xcom_pull(key=END_DATE_KEY, include_prior_dates=True)
 
     logging.info(f'prev date = {prev_end_date}')
 
