@@ -146,9 +146,9 @@ def fs_to_bq(**kwargs):
     for df in dfs:
         # removing dfs from temp folder
 
-        logging.info(f'Creating a job to upload {df}')
+        logging.info(f'removing {workdir+df}')
 
-        os.remove(df)
+        os.remove(workdir+df)
 
 
 
