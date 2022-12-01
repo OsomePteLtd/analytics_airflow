@@ -97,30 +97,30 @@ def fs_to_bq(**kwargs):
 
     hook = BigQueryHook(use_legacy_sql=False)
 
-    if not hook.table_exists(dataset_id=AIRFLOW_TMP_DATASET_ID, table_id=dag_name):
-        hook.create_empty_table(
-            dataset_id=AIRFLOW_TMP_DATASET_ID,
-            table_id=dag_name,
-            schema_fields=[
-                bigquery.SchemaField("Project", "STRING", mode="NULLABLE"),
-                bigquery.SchemaField("Client", "STRING", mode="NULLABLE"),
-                bigquery.SchemaField("Description", "STRING", mode="NULLABLE"),
-                bigquery.SchemaField("Task", "STRING", mode="NULLABLE"),
-                bigquery.SchemaField("User", "STRING", mode="NULLABLE"),
-                bigquery.SchemaField("Group", "STRING", mode="NULLABLE"),
-                bigquery.SchemaField("Email", "STRING", mode="NULLABLE"),
-                bigquery.SchemaField("Tags", "STRING", mode="NULLABLE"),
-                bigquery.SchemaField("Billable", "BOOLEAN", mode="NULLABLE"),
-                bigquery.SchemaField("Start_Date", "DATE", mode="NULLABLE"),
-                bigquery.SchemaField("Start_Time", "TIME", mode="NULLABLE"),
-                bigquery.SchemaField("End_Date", "DATE", mode="NULLABLE"),
-                bigquery.SchemaField("End_Time", "TIME", mode="NULLABLE"),
-                bigquery.SchemaField("Duration__h_", "TIME", mode="NULLABLE"),
-                bigquery.SchemaField("Duration__decimal_", "FLOAT", mode="NULLABLE"),
-                bigquery.SchemaField("Billable_Rate__SGD_", "FLOAT", mode="NULLABLE"),
-                bigquery.SchemaField("Billable_Amount__SGD_", "FLOAT", mode="NULLABLE"),
-            ]
-        )
+    # if not hook.table_exists(dataset_id=AIRFLOW_TMP_DATASET_ID, table_id=dag_name):
+    #     hook.create_empty_table(
+    #         dataset_id=AIRFLOW_TMP_DATASET_ID,
+    #         table_id=dag_name,
+    #         schema_fields=[
+    #             bigquery.SchemaField("Project", "STRING", mode="NULLABLE"),
+    #             bigquery.SchemaField("Client", "STRING", mode="NULLABLE"),
+    #             bigquery.SchemaField("Description", "STRING", mode="NULLABLE"),
+    #             bigquery.SchemaField("Task", "STRING", mode="NULLABLE"),
+    #             bigquery.SchemaField("User", "STRING", mode="NULLABLE"),
+    #             bigquery.SchemaField("Group", "STRING", mode="NULLABLE"),
+    #             bigquery.SchemaField("Email", "STRING", mode="NULLABLE"),
+    #             bigquery.SchemaField("Tags", "STRING", mode="NULLABLE"),
+    #             bigquery.SchemaField("Billable", "BOOLEAN", mode="NULLABLE"),
+    #             bigquery.SchemaField("Start_Date", "DATE", mode="NULLABLE"),
+    #             bigquery.SchemaField("Start_Time", "TIME", mode="NULLABLE"),
+    #             bigquery.SchemaField("End_Date", "DATE", mode="NULLABLE"),
+    #             bigquery.SchemaField("End_Time", "TIME", mode="NULLABLE"),
+    #             bigquery.SchemaField("Duration__h_", "TIME", mode="NULLABLE"),
+    #             bigquery.SchemaField("Duration__decimal_", "FLOAT", mode="NULLABLE"),
+    #             bigquery.SchemaField("Billable_Rate__SGD_", "FLOAT", mode="NULLABLE"),
+    #             bigquery.SchemaField("Billable_Amount__SGD_", "FLOAT", mode="NULLABLE"),
+    #         ]
+    #     )
 
     dfs = os.listdir(workdir)
 
