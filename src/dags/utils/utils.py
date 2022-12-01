@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from .config import DATA_FOLDER_PATH
+from utils.config import DATA_FOLDER_PATH
 
 
 def get_dag_workdir_path_from_dag_obj(dag_obj, sub_path: str = '') -> str:
