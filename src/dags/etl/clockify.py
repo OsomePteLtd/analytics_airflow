@@ -101,7 +101,7 @@ def fs_to_bq(**kwargs):
         hook.create_empty_table(
             dataset_id=AIRFLOW_TMP_DATASET_ID,
             table_id=dag_name,
-            schema_field=[
+            schema_fields=[
                 bigquery.SchemaField("Project", "STRING", mode="NULLABLE"),
                 bigquery.SchemaField("Client", "STRING", mode="NULLABLE"),
                 bigquery.SchemaField("Description", "STRING", mode="NULLABLE"),
