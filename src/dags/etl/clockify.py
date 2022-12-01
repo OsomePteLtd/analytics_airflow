@@ -47,6 +47,7 @@ def clockify_to_fs(**kwargs):
         start_date = '2022-10-01 00:00:00'  # default start_date
 
     end_date = datetime.strptime(start_date, '%Y-%m-%d %H:%M:%S') + timedelta(days=5)
+    end_date = end_date.strftime('%Y-%m-%d %H:%M:%S')
     # end_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).strftime('%Y-%m-%d %H:%M:%S')
 
     if start_date == end_date:
