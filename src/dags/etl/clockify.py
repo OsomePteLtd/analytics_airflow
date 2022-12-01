@@ -12,7 +12,7 @@ from google.cloud import bigquery
 
 from utils.hooks.clockify_hook import ClockifyHook
 from utils.utils import get_dag_workdir_path_from_context
-from utils.config import AIRFLOW_DATASET_ID, AIRFLOW_TMP_DATASET_ID, COMPOSER_BUCKET_NAME, PROJECT_NAME
+from utils.config import AIRFLOW_DATASET_ID, AIRFLOW_TMP_DATASET_ID, COMPOSER_BUCKET_NAME, PROJECT_ID
 
 import logging
 from datetime import timedelta, datetime
@@ -127,7 +127,7 @@ def fs_to_bq(**kwargs):
     job_configuration = {
         "load": {
             "destinationTable": {
-                "project_id": PROJECT_NAME,
+                "project_id": PROJECT_ID,
                 "datasetId": AIRFLOW_TMP_DATASET_ID,
                 "tableId": dag_name,
             },
@@ -141,7 +141,7 @@ def fs_to_bq(**kwargs):
         # "labels": {"airflow_dag": "load_job"}  # move out of key "load"
     }
 
-    hook.insert_job(configuration=job_configuration, project_name=PROJECT_NAME)
+    hook.insert_job(configuration=job_configuration, project_id=PROJECT_ID)
 
     for df in dfs:
         # removing dfs from temp folder
