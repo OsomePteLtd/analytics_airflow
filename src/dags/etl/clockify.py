@@ -142,7 +142,7 @@ def fs_to_bq(**kwargs):
             "skipLeadingRows": 1,
             "allowJaggedRows": True,
             "allowQuotedNewlines": True,
-            # "autodetect": True,
+            "autodetect": True,
         }
     }
 
