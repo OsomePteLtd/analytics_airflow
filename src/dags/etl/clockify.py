@@ -49,7 +49,7 @@ def get_clockify_schema_fields() -> list:
         {"name": "Start_Time", "type": "TIME", "mode": "NULLABLE"},
         {"name": "End_Date", "type": "DATE", "mode": "NULLABLE"},
         {"name": "End_Time", "type": "TIME", "mode": "NULLABLE"},
-        {"name": "Duration__h_", "type": "TIME", "mode": "NULLABLE"},
+        {"name": "Duration__h_", "type": "STRING", "mode": "NULLABLE"},
         {"name": "Duration__decimal_", "type": "FLOAT", "mode": "NULLABLE"},
         {"name": "Billable_Rate__SGD_", "type": "FLOAT", "mode": "NULLABLE"},
         {"name": "Billable_Amount__SGD_", "type": "FLOAT", "mode": "NULLABLE"},
@@ -120,13 +120,6 @@ def fs_to_bq(**kwargs):
     dag_name = context['dag'].dag_id
 
     hook = BigQueryHook(use_legacy_sql=False)
-
-    if not hook.table_exists(dataset_id=AIRFLOW_TMP_DATASET_ID, table_id=DETAILED_REPORT_TABLE_NAME):
-        hook.create_empty_table(
-            dataset_id=AIRFLOW_TMP_DATASET_ID,
-            table_id=DETAILED_REPORT_TABLE_NAME,
-            schema_fields=get_clockify_schema_fields()
-        )
 
     dfs = os.listdir(workdir)
 
