@@ -121,7 +121,7 @@ def fs_to_bq(**kwargs):
 
     hook = BigQueryHook(use_legacy_sql=False)
 
-    if hook.table_exists(dataset_id=AIRFLOW_TMP_DATASET_ID, table_id=DETAILED_REPORT_TABLE_NAME):
+    if not hook.table_exists(dataset_id=AIRFLOW_TMP_DATASET_ID, table_id=DETAILED_REPORT_TABLE_NAME):
         hook.create_empty_table(
             dataset_id=AIRFLOW_TMP_DATASET_ID,
             table_id=DETAILED_REPORT_TABLE_NAME,
@@ -142,7 +142,7 @@ def fs_to_bq(**kwargs):
             "skipLeadingRows": 1,
             "allowJaggedRows": True,
             "allowQuotedNewlines": True,
-            "autodetect": True,
+            # "autodetect": True,
         }
     }
 
@@ -164,7 +164,7 @@ def bq_transform(**kwargs):
     if not hook.table_exists(dataset_id=AIRFLOW_DATASET_ID, table_id=DETAILED_REPORT_TABLE_NAME):
         # if tables doesn't exist - create one
         hook.create_empty_table(
-            dataset_id=AIRFLOW_TMP_DATASET_ID,
+            dataset_id=AIRFLOW_DATASET_ID,
             table_id=DETAILED_REPORT_TABLE_NAME,
             schema_fields=get_clockify_schema_fields(),
             cluster_fields=['email']
