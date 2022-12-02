@@ -11,13 +11,15 @@ from airflow.providers.google.cloud.hooks.bigquery import BigQueryHook
 
 from utils.hooks.clockify_hook import ClockifyHook
 from utils.utils import get_dag_workdir_path_from_context
-from utils.config import AIRFLOW_DATASET_ID, AIRFLOW_TMP_DATASET_ID, COMPOSER_BUCKET_NAME, PROJECT_ID
+from utils.config import AIRFLOW_TMP_DATASET_ID, COMPOSER_BUCKET_NAME, PROJECT_ID
 
 import logging
 from datetime import timedelta, datetime
 
 SUB_PATH = 'temp_extracts/'
 END_DATE_KEY = 'end_date'
+
+CLOCKIFY_DATASET_ID = 'clockify'
 DETAILED_REPORT_TABLE_NAME = 'clockify_detailed_report'
 
 default_args = {
@@ -155,15 +157,16 @@ def bq_transform(**kwargs):
     # check if table exists
     hook = BigQueryHook(use_legacy_sql=False)
     temp_table_name = f'`{PROJECT_ID}.{AIRFLOW_TMP_DATASET_ID}.{DETAILED_REPORT_TABLE_NAME}`'
-    destination_table_name = f'`{PROJECT_ID}.{AIRFLOW_DATASET_ID}.{DETAILED_REPORT_TABLE_NAME}`'
+
+    destination_table_name = f'`{PROJECT_ID}.{CLOCKIFY_DATASET_ID}.{DETAILED_REPORT_TABLE_NAME}`'
 
     table_schema = get_clockify_schema_fields()
     table_schema.append({"name": "_airflow_synced_at", "type": "TIMESTAMP", "mode": "REQUIRED"})
 
-    if not hook.table_exists(dataset_id=AIRFLOW_DATASET_ID, table_id=DETAILED_REPORT_TABLE_NAME):
+    if not hook.table_exists(dataset_id=CLOCKIFY_DATASET_ID, table_id=DETAILED_REPORT_TABLE_NAME):
         # if tables doesn't exist - create one
         hook.create_empty_table(
-            dataset_id=AIRFLOW_DATASET_ID,
+            dataset_id=CLOCKIFY_DATASET_ID,
             table_id=DETAILED_REPORT_TABLE_NAME,
             schema_fields=table_schema,
             cluster_fields=['email']
