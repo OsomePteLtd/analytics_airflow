@@ -157,12 +157,15 @@ def bq_transform(**kwargs):
     temp_table_name = f'`{PROJECT_ID}.{AIRFLOW_TMP_DATASET_ID}.{DETAILED_REPORT_TABLE_NAME}`'
     destination_table_name = f'`{PROJECT_ID}.{AIRFLOW_DATASET_ID}.{DETAILED_REPORT_TABLE_NAME}`'
 
+    table_schema = get_clockify_schema_fields()
+    table_schema.append({"name": "_airflow_synced_at", "type": "TIMESTAMP", "mode": "REQUIRED"})
+
     if not hook.table_exists(dataset_id=AIRFLOW_DATASET_ID, table_id=DETAILED_REPORT_TABLE_NAME):
         # if tables doesn't exist - create one
         hook.create_empty_table(
             dataset_id=AIRFLOW_DATASET_ID,
             table_id=DETAILED_REPORT_TABLE_NAME,
-            schema_fields=get_clockify_schema_fields(),
+            schema_fields=table_schema,
             cluster_fields=['email']
         )
 
