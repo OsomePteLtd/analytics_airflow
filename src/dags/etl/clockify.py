@@ -34,7 +34,7 @@ clockify_dag = DAG(
     dagrun_timeout=timedelta(minutes=20))
 
 
-def get_clockify_schema_fields():
+def get_clockify_schema_fields() -> list:
     schema_fields = [
         {"name": "Project", "type": "STRING", "mode": "NULLABLE"},
         {"name": "Client", "type": "STRING", "mode": "NULLABLE"},
@@ -143,7 +143,9 @@ def fs_to_bq(**kwargs):
             "allowJaggedRows": True,
             "allowQuotedNewlines": True,
             "autodetect": False,
-            "schema": get_clockify_schema_fields()
+            "schema": {
+                "fields": get_clockify_schema_fields()
+            }
         }
     }
 
@@ -184,8 +186,6 @@ def bq_transform(**kwargs):
            DROP TABLE {temp_table_name};
            '''
     hook.run(query, autocommit=True)
-
-
 
 
 def create_new_dagrun(**kwargs):
