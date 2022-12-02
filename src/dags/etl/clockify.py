@@ -30,7 +30,7 @@ clockify_dag = DAG(
     dag_id='clockify',
     default_args=default_args,
     description='Integration with clockify to extract detailed reports to BQ',
-    schedule_interval='@once',
+    schedule_interval='0 2 * * *',
     dagrun_timeout=timedelta(minutes=20))
 
 
@@ -97,6 +97,31 @@ def fs_to_bq(**kwargs):
 
     hook = BigQueryHook(use_legacy_sql=False)
 
+    if hook.table_exists(dataset_id=AIRFLOW_TMP_DATASET_ID, table_id=DETAILED_REPORT_TABLE_NAME):
+        hook.create_empty_table(
+            dataset_id=AIRFLOW_TMP_DATASET_ID,
+            table_id=DETAILED_REPORT_TABLE_NAME,
+            schema_fields=[
+                {'name': 'Project', 'type': 'STRING', 'mode': 'NULLABLE'},
+                {'name': 'Client', 'type': 'STRING', 'mode': 'NULLABLE'},
+                {'name': 'Description', 'type': 'STRING', 'mode': 'NULLABLE'},
+                {'name': 'Task', 'type': 'STRING', 'mode': 'NULLABLE'},
+                {'name': 'User', 'type': 'STRING', 'mode': 'NULLABLE'},
+                {'name': 'Group', 'type': 'STRING', 'mode': 'NULLABLE'},
+                {'name': 'Email', 'type': 'STRING', 'mode': 'NULLABLE'},
+                {'name': 'Tags', 'type': 'STRING', 'mode': 'NULLABLE'},
+                {'name': 'Billable', 'type': 'BOOLEAN', 'mode': 'NULLABLE'},
+                {'name': 'Start_Date', 'type': 'DATE', 'mode': 'NULLABLE'},
+                {'name': 'Start_Time', 'type': 'TIME', 'mode': 'NULLABLE'},
+                {'name': 'End_Date', 'type': 'DATE', 'mode': 'NULLABLE'},
+                {'name': 'End_Time', 'type': 'TIME', 'mode': 'NULLABLE'},
+                {'name': 'Duration__h_', 'type': 'TIME', 'mode': 'NULLABLE'},
+                {'name': 'Duration__decimal_', 'type': 'FLOAT', 'mode': 'NULLABLE'},
+                {'name': 'Billable_Rate__SGD_', 'type': 'FLOAT', 'mode': 'NULLABLE'},
+                {'name': 'Billable_Amount__SGD_', 'type': 'FLOAT', 'mode': 'NULLABLE'},
+            ]
+        )
+
     dfs = os.listdir(workdir)
 
     job_configuration = {
@@ -130,8 +155,9 @@ def bq_transform(**kwargs):
     temp_table_name = f'`{PROJECT_ID}.{AIRFLOW_TMP_DATASET_ID}.{DETAILED_REPORT_TABLE_NAME}`'
     destination_table_name = f'`{PROJECT_ID}.{AIRFLOW_DATASET_ID}.{DETAILED_REPORT_TABLE_NAME}`'
 
-    if hook.table_exists(dataset_id='airflow', table_id=DETAILED_REPORT_TABLE_NAME):
+    if hook.table_exists(dataset_id=AIRFLOW_DATASET_ID, table_id=DETAILED_REPORT_TABLE_NAME):
         # if exists insert from temp table
+        logging.info(f'Destination table found, appending new rows')
         query = f'''
         INSERT INTO {destination_table_name}
         
@@ -143,6 +169,7 @@ def bq_transform(**kwargs):
         hook.run(query, autocommit=True)
     else:
         # if no - create as + datetime.now + clusterization
+        logging.info(f'No destination table, creating a new one ')
         query = f'''
         CREATE TABLE {destination_table_name} 
         CLUSTER BY email
@@ -169,6 +196,7 @@ def create_new_dagrun(**kwargs):
 
     if end_date < last_possible_end_date:
         trigger_dag(context['dag'].dag_id)
+        logging.info(f'End date not reached - triggering new run ')
     else:
         logging.info(f'End date equals to last possible end date, no need in new run ')
 
