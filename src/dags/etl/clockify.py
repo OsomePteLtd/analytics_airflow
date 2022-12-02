@@ -34,6 +34,30 @@ clockify_dag = DAG(
     dagrun_timeout=timedelta(minutes=20))
 
 
+def get_clockify_schema_fields():
+    schema_fields = [
+        {'name': 'Project', 'type': 'STRING', 'mode': 'NULLABLE'},
+        {'name': 'Client', 'type': 'STRING', 'mode': 'NULLABLE'},
+        {'name': 'Description', 'type': 'STRING', 'mode': 'NULLABLE'},
+        {'name': 'Task', 'type': 'STRING', 'mode': 'NULLABLE'},
+        {'name': 'User', 'type': 'STRING', 'mode': 'NULLABLE'},
+        {'name': 'Group', 'type': 'STRING', 'mode': 'NULLABLE'},
+        {'name': 'Email', 'type': 'STRING', 'mode': 'NULLABLE'},
+        {'name': 'Tags', 'type': 'STRING', 'mode': 'NULLABLE'},
+        {'name': 'Billable', 'type': 'BOOLEAN', 'mode': 'NULLABLE'},
+        {'name': 'Start_Date', 'type': 'DATE', 'mode': 'NULLABLE'},
+        {'name': 'Start_Time', 'type': 'TIME', 'mode': 'NULLABLE'},
+        {'name': 'End_Date', 'type': 'DATE', 'mode': 'NULLABLE'},
+        {'name': 'End_Time', 'type': 'TIME', 'mode': 'NULLABLE'},
+        {'name': 'Duration__h_', 'type': 'TIME', 'mode': 'NULLABLE'},
+        {'name': 'Duration__decimal_', 'type': 'FLOAT', 'mode': 'NULLABLE'},
+        {'name': 'Billable_Rate__SGD_', 'type': 'FLOAT', 'mode': 'NULLABLE'},
+        {'name': 'Billable_Amount__SGD_', 'type': 'FLOAT', 'mode': 'NULLABLE'},
+    ]
+
+    return schema_fields
+
+
 @provide_session
 def clockify_to_fs(session, **kwargs):
     # getting things from context
@@ -101,25 +125,7 @@ def fs_to_bq(**kwargs):
         hook.create_empty_table(
             dataset_id=AIRFLOW_TMP_DATASET_ID,
             table_id=DETAILED_REPORT_TABLE_NAME,
-            schema_fields=[
-                {'name': 'Project', 'type': 'STRING', 'mode': 'NULLABLE'},
-                {'name': 'Client', 'type': 'STRING', 'mode': 'NULLABLE'},
-                {'name': 'Description', 'type': 'STRING', 'mode': 'NULLABLE'},
-                {'name': 'Task', 'type': 'STRING', 'mode': 'NULLABLE'},
-                {'name': 'User', 'type': 'STRING', 'mode': 'NULLABLE'},
-                {'name': 'Group', 'type': 'STRING', 'mode': 'NULLABLE'},
-                {'name': 'Email', 'type': 'STRING', 'mode': 'NULLABLE'},
-                {'name': 'Tags', 'type': 'STRING', 'mode': 'NULLABLE'},
-                {'name': 'Billable', 'type': 'BOOLEAN', 'mode': 'NULLABLE'},
-                {'name': 'Start_Date', 'type': 'DATE', 'mode': 'NULLABLE'},
-                {'name': 'Start_Time', 'type': 'TIME', 'mode': 'NULLABLE'},
-                {'name': 'End_Date', 'type': 'DATE', 'mode': 'NULLABLE'},
-                {'name': 'End_Time', 'type': 'TIME', 'mode': 'NULLABLE'},
-                {'name': 'Duration__h_', 'type': 'TIME', 'mode': 'NULLABLE'},
-                {'name': 'Duration__decimal_', 'type': 'FLOAT', 'mode': 'NULLABLE'},
-                {'name': 'Billable_Rate__SGD_', 'type': 'FLOAT', 'mode': 'NULLABLE'},
-                {'name': 'Billable_Amount__SGD_', 'type': 'FLOAT', 'mode': 'NULLABLE'},
-            ]
+            schema_fields=get_clockify_schema_fields()
         )
 
     dfs = os.listdir(workdir)
@@ -155,35 +161,30 @@ def bq_transform(**kwargs):
     temp_table_name = f'`{PROJECT_ID}.{AIRFLOW_TMP_DATASET_ID}.{DETAILED_REPORT_TABLE_NAME}`'
     destination_table_name = f'`{PROJECT_ID}.{AIRFLOW_DATASET_ID}.{DETAILED_REPORT_TABLE_NAME}`'
 
-    if hook.table_exists(dataset_id=AIRFLOW_DATASET_ID, table_id=DETAILED_REPORT_TABLE_NAME):
-        # if exists insert from temp table
-        logging.info(f'Destination table found, appending new rows')
-        query = f'''
-        INSERT INTO {destination_table_name}
-        
-        SELECT 
-            *,
-            CURRENT_TIMESTAMP() as _airflow_synced_at 
-        FROM {temp_table_name};
-        '''
-        hook.run(query, autocommit=True)
-    else:
-        # if no - create as + datetime.now + clusterization
-        logging.info(f'No destination table, creating a new one ')
-        query = f'''
-        CREATE TABLE {destination_table_name} 
-        CLUSTER BY email
-        AS
- 
-        SELECT 
-            *,
-            CURRENT_TIMESTAMP() as _airflow_synced_at 
-        FROM {temp_table_name};
-        '''
-        hook.run(query, autocommit=True)
+    if not hook.table_exists(dataset_id=AIRFLOW_DATASET_ID, table_id=DETAILED_REPORT_TABLE_NAME):
+        # if tables doesn't exist - create one
+        hook.create_empty_table(
+            dataset_id=AIRFLOW_TMP_DATASET_ID,
+            table_id=DETAILED_REPORT_TABLE_NAME,
+            schema_fields=get_clockify_schema_fields(),
+            cluster_fields=['email']
+        )
 
-    # drop temp table
-    hook.run(f'DROP TABLE {temp_table_name};', autocommit=True)
+    # appending new rows and dropping temp table
+    logging.info(f'Destination table found, appending new rows')
+    query = f'''
+           INSERT INTO {destination_table_name}
+
+           SELECT 
+               *,
+               CURRENT_TIMESTAMP() as _airflow_synced_at 
+           FROM {temp_table_name};
+           
+           DROP TABLE {temp_table_name};
+           '''
+    hook.run(query, autocommit=True)
+
+
 
 
 def create_new_dagrun(**kwargs):
