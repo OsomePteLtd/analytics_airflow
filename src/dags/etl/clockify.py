@@ -6,6 +6,7 @@ from airflow.models import XCom
 from airflow.utils.session import provide_session
 from airflow.operators.python import PythonOperator
 from airflow.exceptions import AirflowSkipException
+from airflow.api.common.trigger_dag import trigger_dag
 from airflow.providers.google.cloud.hooks.bigquery import BigQueryHook
 
 from utils.hooks.clockify_hook import ClockifyHook
@@ -17,6 +18,7 @@ from datetime import timedelta, datetime
 
 SUB_PATH = 'temp_extracts/'
 END_DATE_KEY = 'end_date'
+DETAILED_REPORT_TABLE_NAME = 'clockify_detailed_report'
 
 default_args = {
     'start_date': airflow.utils.dates.days_ago(0),
@@ -102,7 +104,7 @@ def fs_to_bq(**kwargs):
             "destinationTable": {
                 "project_id": PROJECT_ID,
                 "datasetId": AIRFLOW_TMP_DATASET_ID,
-                "tableId": dag_name,
+                "tableId": DETAILED_REPORT_TABLE_NAME,
             },
             "sourceUris": [f"gs://{COMPOSER_BUCKET_NAME}/data/{dag_name}/{SUB_PATH}*"],
             "writeDisposition": "WRITE_APPEND",
@@ -113,7 +115,7 @@ def fs_to_bq(**kwargs):
         }
     }
 
-    hook.insert_job(configuration=job_configuration, project_id=PROJECT_ID)
+    hook.insert_job(configuration=job_configuration)
 
     for df in dfs:
         # removing dfs from temp folder
@@ -123,8 +125,52 @@ def fs_to_bq(**kwargs):
 
 def bq_transform(**kwargs):
     # move from temp table to prod table
+    # check if table exists
+    hook = BigQueryHook(use_legacy_sql=False)
+    temp_table_name = f'`{PROJECT_ID}.{AIRFLOW_TMP_DATASET_ID}.{DETAILED_REPORT_TABLE_NAME}`'
+    destination_table_name = f'`{PROJECT_ID}.{AIRFLOW_DATASET_ID}.{DETAILED_REPORT_TABLE_NAME}`'
+
+    if hook.table_exists(dataset_id='airflow', table_id=DETAILED_REPORT_TABLE_NAME):
+        # if exists insert from temp table
+        query = f'''
+        INSERT INTO {destination_table_name}
+        
+        SELECT 
+            *,
+            CURRENT_TIMESTAMP() as _airflow_synced_at 
+        FROM {temp_table_name};
+        '''
+        hook.run(query, autocommit=True)
+    else:
+        # if no - create as + datetime.now + clusterization
+        query = f'''
+        CREATE TABLE {destination_table_name} 
+        CLUSTER BY email
+        AS
+ 
+        SELECT 
+            *,
+            CURRENT_TIMESTAMP() as _airflow_synced_at 
+        FROM {temp_table_name};
+        '''
+        hook.run(query, autocommit=True)
+
     # drop temp table
-    print('bq_transform')
+    hook.run(f'DROP TABLE {temp_table_name};', autocommit=True)
+
+
+def create_new_dagrun(**kwargs):
+    # check if end_date is the last possible, if no, create new dagrun
+    context = kwargs
+    ti = context['ti']
+    end_date = ti.xcom_pull(key='end_date')
+    end_date = datetime.strptime(end_date, '%Y-%m-%d %H:%M:%S')
+    last_possible_end_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    if end_date < last_possible_end_date:
+        trigger_dag(context['dag'].dag_id)
+    else:
+        logging.info(f'End date equals to last possible end date, no need in new run ')
 
 
 with clockify_dag as dag:
@@ -143,4 +189,9 @@ with clockify_dag as dag:
         provide_context=True,
         python_callable=bq_transform)
 
-    extract >> load >> transform
+    next_run = PythonOperator(
+        task_id='check_end_date_and_create_new_dagrun',
+        provide_context=True,
+        python_callable=create_new_dagrun)
+
+    extract >> load >> transform >> next_run
