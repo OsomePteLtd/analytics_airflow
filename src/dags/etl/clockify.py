@@ -143,6 +143,7 @@ def fs_to_bq(**kwargs):
             "allowJaggedRows": True,
             "allowQuotedNewlines": True,
             "autodetect": True,
+            "schema": get_clockify_schema_fields()
         }
     }
 
