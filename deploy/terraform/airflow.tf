@@ -79,6 +79,7 @@ resource "google_composer_environment" "analytics_airflow" {
 
       airflow_config_overrides = {
         dask-catchup_by_default = false
+        scheduler-catchup_by_default = false
         core-max_active_runs_per_dag = 1
         core-dags_are_paused_at_creation = true
       }

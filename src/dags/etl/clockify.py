@@ -23,7 +23,7 @@ CLOCKIFY_DATASET_ID = 'clockify'
 DETAILED_REPORT_TABLE_NAME = 'clockify_detailed_report'
 
 default_args = {
-    'start_date': pendulum.datetime(2022, 12, 5, tz="UTC"),
+    'start_date': pendulum.datetime(2022, 12, 1, tz="UTC"),
     'retries': 1,
     'retry_delay': timedelta(minutes=5)
 }
