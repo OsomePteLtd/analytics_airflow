@@ -23,7 +23,7 @@ CLOCKIFY_DATASET_ID = 'clockify'
 DETAILED_REPORT_TABLE_NAME = 'clockify_detailed_report'
 
 default_args = {
-    'start_date': pendulum.datetime(2022, 12, 1, tz="UTC"),
+    'start_date': pendulum.datetime(2022, 12, 5, tz="UTC"),
     'retries': 1,
     'retry_delay': timedelta(minutes=5)
 }
@@ -196,7 +196,10 @@ def create_new_dagrun(**kwargs):
     last_possible_end_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
     if end_date < last_possible_end_date:
-        trigger_dag(context['dag'].dag_id)
+        trigger_dag(dag_id=context['dag'].dag_id,
+                    execution_date=ti['execution_date']+timedelta(seconds=1)
+
+                    )
         logging.info(f'End date not reached - triggering new run ')
     else:
         logging.info(f'End date equals to last possible end date, no need in new run ')
