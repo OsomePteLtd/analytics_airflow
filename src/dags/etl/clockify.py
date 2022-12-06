@@ -10,7 +10,7 @@ from airflow.api.common.trigger_dag import trigger_dag
 from airflow.providers.google.cloud.hooks.bigquery import BigQueryHook
 
 from utils.hooks.clockify_hook import ClockifyHook
-from utils.utils import get_dag_workdir_path_from_context
+from utils.utils import get_dag_workdir_path_from_context, task_fail_slack_alert
 from utils.config import AIRFLOW_TMP_DATASET_ID, COMPOSER_BUCKET_NAME, PROJECT_ID
 
 import logging
@@ -25,7 +25,8 @@ DETAILED_REPORT_TABLE_NAME = 'clockify_detailed_report'
 default_args = {
     'start_date': pendulum.datetime(2022, 12, 1, tz="UTC"),
     'retries': 1,
-    'retry_delay': timedelta(minutes=5)
+    'retry_delay': timedelta(minutes=5),
+    'on-failure-callback': task_fail_slack_alert
 }
 
 clockify_dag = DAG(
