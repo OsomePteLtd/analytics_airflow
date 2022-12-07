@@ -41,7 +41,7 @@ def upload_systems(**kwargs):
     # prepare
     data_column_name = 'system_json'
     current_date = kwargs.get('data_interval_start'),
-    list_of_systems = [{"json": {data_column_name: i, SYNCED_AT_FIELD: str(current_date)}} for i in list_of_systems]
+    list_of_systems = [{data_column_name: i, SYNCED_AT_FIELD: str(current_date)} for i in list_of_systems]
     logging.info(f'Transformed data and inserted a timestamp')
 
     # check and create bq table
