@@ -51,7 +51,7 @@ def upload_systems(**kwargs):
         bigquery_hook.create_empty_table(
             project_id=DATASET_ID,
             table_id=SYSTEMS_TABLE_NAME,
-            schema_field=[
+            schema_fields=[
                 {"name": data_column_name, "type": "JSON", "mode": "REQUIRED"},
                 {"name": SYNCED_AT_FIELD, "type": "TIMESTAMP", "mode": "REQUIRED"},
             ],
