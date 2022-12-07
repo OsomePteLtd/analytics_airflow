@@ -5,14 +5,14 @@ from airflow.providers.google.cloud.hooks.bigquery import BigQueryHook
 import json
 import logging
 import pendulum
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from utils.config import SYNCED_AT_FIELD
 from utils.utils import task_fail_slack_alert
 from utils.hooks.jumpcloud_hook import JumpcloudHook
 
 DATASET_ID = 'jumpcloud'
-SYSTEMS_TABLE_NAME = 'systems_test'
+SYSTEMS_TABLE_NAME = 'systems'
 
 default_args = {
     'start_date': pendulum.datetime(2022, 12, 6, tz="UTC"),
@@ -41,7 +41,7 @@ def upload_systems(**kwargs):
 
     # prepare
     data_column_name = 'system_json'
-    current_date = kwargs.get('data_interval_start').strftime('%Y-%m-%d %H:%M:%S')
+    current_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     prepared_rows = []
     for system in extracted_systems:
