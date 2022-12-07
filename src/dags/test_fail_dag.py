@@ -17,15 +17,17 @@ def failed():
     print(0 / 0)
 
 
-dag = DAG(
+test_dag = DAG(
     'test_fail',
     default_args=default_args,
     description='test for fail notification',
     schedule_interval='@once',
     dagrun_timeout=timedelta(minutes=20))
 
-# priority_weight has type int in Airflow DB, uses the maximum.
-t1 = PythonOperator(
-    task_id='test_fail',
-    python_callable=failed
-)
+with test_dag as dag:
+    t1 = PythonOperator(
+        task_id='test_fail',
+        python_callable=failed
+    )
+
+    t1
