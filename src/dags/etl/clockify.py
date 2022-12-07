@@ -11,7 +11,7 @@ from airflow.providers.google.cloud.hooks.bigquery import BigQueryHook
 
 from utils.hooks.clockify_hook import ClockifyHook
 from utils.utils import get_dag_workdir_path_from_context, task_fail_slack_alert
-from utils.config import AIRFLOW_TMP_DATASET_ID, COMPOSER_BUCKET_NAME, PROJECT_ID
+from utils.config import AIRFLOW_TMP_DATASET_ID, COMPOSER_BUCKET_NAME, PROJECT_ID, SYNCED_AT_FIELD
 
 import logging
 from datetime import timedelta, datetime
@@ -162,7 +162,7 @@ def bq_transform(**kwargs):
     destination_table_name = f'`{PROJECT_ID}.{CLOCKIFY_DATASET_ID}.{DETAILED_REPORT_TABLE_NAME}`'
 
     table_schema = get_clockify_schema_fields()
-    table_schema.append({"name": "_airflow_synced_at", "type": "TIMESTAMP", "mode": "REQUIRED"})
+    table_schema.append({"name": SYNCED_AT_FIELD, "type": "TIMESTAMP", "mode": "REQUIRED"})
 
     if not hook.table_exists(dataset_id=CLOCKIFY_DATASET_ID, table_id=DETAILED_REPORT_TABLE_NAME):
         # if tables doesn't exist - create one
@@ -180,7 +180,7 @@ def bq_transform(**kwargs):
 
            SELECT 
                *,
-               CURRENT_TIMESTAMP() as _airflow_synced_at 
+               CURRENT_TIMESTAMP() as {SYNCED_AT_FIELD} 
            FROM {temp_table_name};
            
            DROP TABLE {temp_table_name};

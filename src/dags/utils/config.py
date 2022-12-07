@@ -6,4 +6,6 @@ AIRFLOW_DATASET_ID = 'airflow'
 
 PROJECT_ID = 'healthy-clock-304411'
 
+SYNCED_AT_FIELD = '_airflow_synced_at'
+
 SLACK_CONN_ID = 'slack_alerts'
