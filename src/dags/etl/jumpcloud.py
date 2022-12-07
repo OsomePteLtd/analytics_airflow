@@ -49,7 +49,7 @@ def upload_systems(**kwargs):
     if not bigquery_hook.table_exists(dataset_id=DATASET_ID, table_id=SYSTEMS_TABLE_NAME):
         logging.info(f'Table wasn\'t found, creating one')
         bigquery_hook.create_empty_table(
-            project_id=DATASET_ID,
+            dataset_id=DATASET_ID,
             table_id=SYSTEMS_TABLE_NAME,
             schema_fields=[
                 {"name": data_column_name, "type": "JSON", "mode": "REQUIRED"},
@@ -58,7 +58,8 @@ def upload_systems(**kwargs):
             time_partitioning={
                 "type": 'DAY',
                 "field": SYNCED_AT_FIELD,
-            }
+            },
+            cluster_fields=[SYNCED_AT_FIELD]
         )
         logging.info(f'Table was created')
 
