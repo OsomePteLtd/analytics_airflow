@@ -3,10 +3,13 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from datetime import timedelta
 
+from utils.utils import task_fail_slack_alert
+
 default_args = {
     'start_date': airflow.utils.dates.days_ago(0),
     'retries': 1,
-    'retry_delay': timedelta(minutes=5)
+    'retry_delay': timedelta(minutes=5),
+    'on_failure_callback': task_fail_slack_alert,
 }
 
 
