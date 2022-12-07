@@ -2,6 +2,7 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.google.cloud.hooks.bigquery import BigQueryHook
 
+import json
 import logging
 import pendulum
 from datetime import timedelta
@@ -35,13 +36,22 @@ def upload_systems(**kwargs):
     logging.info(f'Initialized hooks')
 
     # extracting data from jumpcloud
-    list_of_systems = jumpcloud_hook.get_full_systems_list()
+    extracted_systems = jumpcloud_hook.get_full_systems_list()
     logging.info(f'Extracted data from jumpcloud')
 
     # prepare
     data_column_name = 'system_json'
-    current_date = kwargs.get('data_interval_start'),
-    list_of_systems = [{data_column_name: i, SYNCED_AT_FIELD: str(current_date)} for i in list_of_systems]
+    current_date = kwargs.get('data_interval_start').strftime('%Y-%m-%d %H:%M:%S')
+
+    prepared_rows = []
+    for system in extracted_systems:
+        prepared_row = {
+            data_column_name: json.dumps(system),
+            SYNCED_AT_FIELD: current_date
+        }
+
+        prepared_rows.append(prepared_row)
+
     logging.info(f'Transformed data and inserted a timestamp')
 
     # check and create bq table
@@ -69,7 +79,7 @@ def upload_systems(**kwargs):
     bigquery_hook.insert_all(
         dataset_id=DATASET_ID,
         table_id=SYSTEMS_TABLE_NAME,
-        rows=list_of_systems
+        rows=prepared_rows
     )
 
     logging.info(f'Done successfully')
