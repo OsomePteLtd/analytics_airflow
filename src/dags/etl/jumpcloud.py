@@ -38,10 +38,12 @@ def upload_systems(**kwargs):
     # extracting data from jumpcloud
     extracted_systems = jumpcloud_hook.get_full_systems_list()
     logging.info(f'Extracted data from jumpcloud')
+    logging.info(f'Extracted data from jumpcloud')
 
     # prepare
     data_column_name = 'system_json'
     current_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    logging.info(f'Current date is - {current_date}')
 
     prepared_rows = []
     for system in extracted_systems:
