@@ -108,7 +108,7 @@ class JumpcloudHook(BaseHook):
 
         """
 
-        systems_endpoint = '/system_users'
+        system_users_endpoint = '/systemusers'
 
         params = {
             "limit": str(limit),
@@ -128,7 +128,7 @@ class JumpcloudHook(BaseHook):
             params['filter'] = filter_val
 
         logging.info(f'Requesting a system users with following parameters {params}')
-        response = requests.get(url=self.host + systems_endpoint, headers=self._auth_headers, params=params)
+        response = requests.get(url=self.host + system_users_endpoint, headers=self._auth_headers, params=params)
 
         logging.info(f'Status code: {response.status_code}, returning a response object')
 
