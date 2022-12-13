@@ -26,10 +26,6 @@ snapshots_dag = DAG(
 
 
 def save_snapshot(hook, project_id: str, dataset_id: str, table_name: str):
-    hook.create_empty_dataset(
-        dataset_id=SNAPSHOT_DATASET_ID,
-        project_id=project_id,
-        exists_ok=True)
 
     current_datetime = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
