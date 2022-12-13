@@ -36,7 +36,7 @@ def save_snapshot(hook, project_id: str, dataset_id: str, table_name: str):
     expiration_timestamp = (current_datetime + timedelta(days=90)).strftime('%Y-%m-%d %H:%M:%S')
     dest_table_name = f'{table_name}_{current_datetime.strftime("%Y%m%d")}'
 
-    logging.info(f'Snapshotting {project_id}.{dataset_id}.{table_name} as {project_id}.{SNAPSHOT_DATASET_ID}.'
+    logging.info(f'\nSnapshotting {project_id}.{dataset_id}.{table_name} as \n{project_id}.{SNAPSHOT_DATASET_ID}.'
                  f'{dest_table_name} with expiration set to {expiration_timestamp}'
                  )
 
@@ -46,7 +46,7 @@ def save_snapshot(hook, project_id: str, dataset_id: str, table_name: str):
     OPTIONS (expiration_timestamp = TIMESTAMP '{expiration_timestamp}');
     '''
 
-    hook.run(query, autocommit=True)
+    hook.run_query(sql=query, use_legacy_sql=False)
 
     logging.info('Done')
 
