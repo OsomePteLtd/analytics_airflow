@@ -32,7 +32,7 @@ def save_snapshot(hook, project_id: str, dataset_id: str, table_name: str):
     expiration_timestamp = (current_datetime + timedelta(days=90)).strftime('%Y-%m-%d %H:%M:%S')
     dest_table_name = f'{table_name}{current_datetime.strftime("%Y%m%d")}'
 
-    logging.info(f'\nSnapshotting {project_id}.{dataset_id}.{table_name} as \n{project_id}.{SNAPSHOT_DATASET_ID}.'
+    logging.info(f'Snapshotting {project_id}.{dataset_id}.{table_name} as \n{project_id}.{SNAPSHOT_DATASET_ID}.'
                  f'{dest_table_name} with expiration set to {expiration_timestamp}'
                  )
 
