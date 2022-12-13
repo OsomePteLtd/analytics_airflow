@@ -20,7 +20,7 @@ default_args = {
 snapshots_dag = DAG(
     dag_id='bigquery_snapshots',
     default_args=default_args,
-    description='Snapshotting to snapshot_backup schema',
+    description=f'Snapshotting to {SNAPSHOT_DATASET_ID} schema',
     schedule_interval='10 3 * * *',
     dagrun_timeout=timedelta(minutes=20))
 
