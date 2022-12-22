@@ -17,7 +17,7 @@ def get_dag_workdir_path_from_dag_obj(dag_obj, sub_path: str = '') -> str:
 
     dag_id = dag_obj.dag_id
 
-    if sub_path[0] == '/':
+    if len(sub_path) > 0 and sub_path[0] == '/':
         sub_path = sub_path[1:]
 
     full_path = os.path.join(DATA_FOLDER_PATH, dag_id, sub_path)
