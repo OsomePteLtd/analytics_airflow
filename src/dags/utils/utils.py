@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from airflow.providers.slack.hooks.slack_webhook import SlackWebhookHook
 
-from utils.config import DATA_FOLDER_PATH, SLACK_CONN_ID
+from utils.config import DATA_FOLDER_PATH, SLACK_CONN_ID, COMPOSER_BUCKET_NAME
 
 
 def get_dag_workdir_path_from_dag_obj(dag_obj, sub_path: str = '') -> str:
@@ -76,3 +76,13 @@ def task_fail_slack_alert(context):
 
     hook = SlackWebhookHook(slack_webhook_conn_id=SLACK_CONN_ID)
     hook.send(text=slack_msg)
+
+
+def local_path_to_gs_uri(path: str) -> str:
+    """
+    Returns GCS uri instead of local path
+    :param path:
+    :return:
+    """
+    path = path.replace(DATA_FOLDER_PATH, f'gs://{COMPOSER_BUCKET_NAME}/data/')
+    return path
