@@ -91,7 +91,7 @@ def process(**kwargs):
             })
     final_df = pd.DataFrame(final_pairs)
     final_df['parent_created'] = pd.to_datetime(final_df['parent_created'])
-    final_df["rank"] = final_df.groupby("child_company")["parent_created_ts"].rank(method="first", ascending=True)
+    final_df["rank"] = final_df.groupby("child_company")["parent_created"].rank(method="first", ascending=True)
     final_df = final_df[final_df['rank'] == 1]
     final_df[SYNCED_AT_FIELD] = datetime.now()
     logging.info(f'Transform done, result df has {len(final_df)} rows')
