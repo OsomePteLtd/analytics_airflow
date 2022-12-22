@@ -139,6 +139,9 @@ def fs_to_bq(**kwargs):
             "allowJaggedRows": True,
             "allowQuotedNewlines": True,
             "autodetect": True,
+            "clustering": {
+                'fields': ['parent_company', 'child_company']
+            },
             "schema": {
                 "fields": get_clockify_schema_fields()
             }
@@ -198,7 +201,7 @@ def create_new_dagrun(**kwargs):
 
     if end_date < last_possible_end_date:
         trigger_dag(dag_id=context['dag'].dag_id,
-                    execution_date=context['execution_date']+timedelta(seconds=1)
+                    execution_date=context['execution_date'] + timedelta(seconds=1)
 
                     )
         logging.info(f'End date not reached - triggering new run ')
