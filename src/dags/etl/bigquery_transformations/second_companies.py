@@ -45,6 +45,8 @@ def process(**kwargs):
 
     # extracting df from BQ
     logging.info(f'Extracting df from BQ')
+    global all_connections
+
     all_connections = hook.get_pandas_df(
         sql=f'SELECT * FROM `{SOURCE_SCHEMA_NAME}.{SOURCE_TABLE_NAME}`'
     )
@@ -53,7 +55,6 @@ def process(**kwargs):
 
     # transforming df
     logging.info(f'Starting transform')
-    global all_connections
     global list_of_children
 
     parent_creations = all_connections[['parent_company', 'parent_created']].drop_duplicates()
@@ -91,7 +92,7 @@ def process(**kwargs):
     final_df = pd.DataFrame(final_pairs)
     final_df['parent_created_ts'] = pd.to_datetime(final_df['parent_created'])
     final_df["rank"] = final_df.groupby("child_company")["parent_created_ts"].rank(method="first", ascending=True)
-    final_df = final_df[final_df.rank == 1]
+    final_df = final_df[final_df['rank'] == 1]
 
     logging.info(f'Transform done, result df has {len(final_df)} rows')
 
