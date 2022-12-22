@@ -90,7 +90,7 @@ def process(**kwargs):
                     'child_created']
             })
     final_df = pd.DataFrame(final_pairs)
-    final_df['parent_created_ts'] = pd.to_datetime(final_df['parent_created'])
+    final_df['parent_created'] = pd.to_datetime(final_df['parent_created'])
     final_df["rank"] = final_df.groupby("child_company")["parent_created_ts"].rank(method="first", ascending=True)
     final_df = final_df[final_df['rank'] == 1]
     final_df[SYNCED_AT_FIELD] = datetime.now()
@@ -115,6 +115,9 @@ def process(**kwargs):
             "writeDisposition": "WRITE_TRUNCATE",
             "skipLeadingRows": 1,
             "allowJaggedRows": True,
+            "clustering": {
+                'fields': ['parent_company', 'child_company']
+            },
             "allowQuotedNewlines": True,
             "autodetect": True,
         }
