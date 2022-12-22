@@ -6,8 +6,8 @@ from airflow.providers.google.cloud.hooks.bigquery import BigQueryHook
 
 import logging
 import pendulum
-from datetime import timedelta
-from utils.config import AIRFLOW_DATASET_ID, PROJECT_ID
+from datetime import timedelta, datetime
+from utils.config import AIRFLOW_DATASET_ID, PROJECT_ID, SYNCED_AT_FIELD
 from utils.utils import task_fail_slack_alert, get_dag_workdir_path_from_context, local_path_to_gs_uri
 
 DAG_NAME = 'second_companies'
@@ -93,7 +93,7 @@ def process(**kwargs):
     final_df['parent_created_ts'] = pd.to_datetime(final_df['parent_created'])
     final_df["rank"] = final_df.groupby("child_company")["parent_created_ts"].rank(method="first", ascending=True)
     final_df = final_df[final_df['rank'] == 1]
-
+    final_df[SYNCED_AT_FIELD] = datetime.now()
     logging.info(f'Transform done, result df has {len(final_df)} rows')
 
     # saving to s3
