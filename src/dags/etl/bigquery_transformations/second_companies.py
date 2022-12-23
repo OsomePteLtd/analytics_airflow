@@ -21,7 +21,7 @@ default_args = {
     'start_date': pendulum.datetime(2022, 12, 21, tz="UTC"),
     'retries': 1,
     'retry_delay': timedelta(minutes=5),
-    'on-failure-callback': task_fail_slack_alert
+    'on_failure_callback': task_fail_slack_alert
 }
 
 second_companies_dag = DAG(
