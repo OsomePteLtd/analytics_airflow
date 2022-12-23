@@ -11,9 +11,8 @@ from utils.config import AIRFLOW_DATASET_ID, PROJECT_ID, SYNCED_AT_FIELD
 from utils.utils import task_fail_slack_alert, get_dag_workdir_path_from_context, local_path_to_gs_uri
 
 DAG_NAME = 'second_companies'
-
-SOURCE_SCHEMA_NAME = 'dbt_atsybaeva'
-SOURCE_TABLE_NAME = 'parent_child_companies_all'
+SOURCE_SCHEMA_NAME = 'analytics'
+SOURCE_TABLE_NAME = 'stg__second_companies__children_all'
 
 DESTINATION_SCHEMA_NAME = AIRFLOW_DATASET_ID
 DESTINATION_TABLE_NAME = 'processed_parent_child_companies'
@@ -57,12 +56,12 @@ def process(**kwargs):
     logging.info(f'Starting transform')
     global list_of_children
 
-    parent_creations = all_connections[['parent_company', 'parent_created']].drop_duplicates()
-    children_creations = all_connections[['child_company', 'child_created']].drop_duplicates()
-    absolute_parents = all_connections[all_connections.is_first_for_all_users == 1].parent_company.unique()
+    parent_creations = all_connections[['parent_company_id', 'parent_created_at']].drop_duplicates()
+    children_creations = all_connections[['child_company_id', 'child_created_at']].drop_duplicates()
+    absolute_parents = all_connections[all_connections.is_first_for_all_users == 1].parent_company_id.unique()
 
     def find_children(parent_id):
-        all_children = all_connections[all_connections.parent_company == parent_id].child_company.unique()
+        all_children = all_connections[all_connections.parent_company_id == parent_id].child_company_id.unique()
 
         if len(all_children) == 0:
             return
@@ -82,18 +81,20 @@ def process(**kwargs):
         a = find_children(parent)
         for child in list_of_children:
             final_pairs.append({
-                'parent_company': parent,
-                'child_company': child,
-                'parent_created': parent_creations[parent_creations['parent_company'] == parent].iloc[0][
-                    'parent_created'],
-                'child_created': children_creations[children_creations['child_company'] == child].iloc[0][
-                    'child_created']
+                'parent_company_id': parent,
+                'child_company_id': child,
+                'parent_created_at': parent_creations[parent_creations['parent_company_id'] == parent].iloc[0][
+                    'parent_created_at'],
+                'child_created_at': children_creations[children_creations['child_company_id'] == child].iloc[0][
+                    'child_created_at']
             })
     final_df = pd.DataFrame(final_pairs)
-    final_df['parent_created'] = pd.to_datetime(final_df['parent_created'])
-    final_df["rank"] = final_df.groupby("child_company")["parent_created"].rank(method="first", ascending=True)
+    final_df['parent_created_at'] = pd.to_datetime(final_df['parent_created_at'])
+    final_df["rank"] = final_df.groupby('child_company_id')["parent_created_at"].rank(method="first", ascending=True)
     final_df = final_df[final_df['rank'] == 1]
+    final_df.drop(columns='rank', inplace=True)
     final_df[SYNCED_AT_FIELD] = datetime.now()
+
     logging.info(f'Transform done, result df has {len(final_df)} rows')
 
     # saving to s3
@@ -116,7 +117,7 @@ def process(**kwargs):
             "skipLeadingRows": 1,
             "allowJaggedRows": True,
             "clustering": {
-                'fields': ['parent_company', 'child_company']
+                'fields': ['parent_company_id', 'child_company_id']
             },
             "allowQuotedNewlines": True,
             "autodetect": True,
