@@ -7,7 +7,7 @@ from utils.utils import task_fail_slack_alert
 
 default_args = {
     'start_date': airflow.utils.dates.days_ago(0),
-    'retries': 0,
+    'retries': 1,
     'retry_delay': timedelta(minutes=1),
     'on_failure_callback': task_fail_slack_alert,
 }
