@@ -117,7 +117,7 @@ def process(**kwargs):
             "skipLeadingRows": 1,
             "allowJaggedRows": True,
             "clustering": {
-                'fields': ['parent_company_id', 'child_company_id']
+                'fields': ['child_company_id', 'parent_company_id']
             },
             "allowQuotedNewlines": True,
             "autodetect": True,
