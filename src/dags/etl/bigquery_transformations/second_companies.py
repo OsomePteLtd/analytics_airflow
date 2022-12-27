@@ -8,7 +8,7 @@ import logging
 import pendulum
 from datetime import timedelta, datetime
 from utils.config import AIRFLOW_DATASET_ID, PROJECT_ID, SYNCED_AT_FIELD
-from utils.utils import task_fail_slack_alert, get_dag_workdir_path_from_context, local_path_to_gs_uri
+from utils.utils import task_fail_slack_alert, get_dag_workdir_path_from_context, get_gcs_path_from_local_path
 
 DAG_NAME = 'second_companies'
 SOURCE_SCHEMA_NAME = 'analytics'
@@ -103,7 +103,7 @@ def process(**kwargs):
     logging.info(f'Successfully saved df')
 
     # uploading df by overwriting existing table
-    gcs_path = local_path_to_gs_uri(saved_df_name)
+    gcs_path = get_gcs_path_from_local_path(saved_df_name)
     logging.info(f'Starting BQ upload, gcs path: {gcs_path}')
     job_configuration = {
         "load": {

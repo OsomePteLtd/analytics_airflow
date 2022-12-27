@@ -78,7 +78,7 @@ def task_fail_slack_alert(context):
     hook.send(text=slack_msg)
 
 
-def local_path_to_gs_uri(path: str) -> str:
+def get_gcs_path_from_local_path(path: str) -> str:
     """
     Returns GCS uri instead of local path
     :param path:
