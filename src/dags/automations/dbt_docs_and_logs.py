@@ -40,10 +40,7 @@ def generate_docs(**kwargs):
     # get manifest.json and catalog.json from API
     logging.info(f'Getting list of runs')
     run_id = None
-    # runs = dbt_hook.list_job_runs(
-    #     job_definition_id=40171,  # id of Scheduled refresh job
-    #     order_by='-id'
-    # )
+
     account_id = dbt_hook.connection.login
     runs = dbt_hook._run_and_get_response(
         endpoint=f"{account_id}/runs/",
@@ -54,9 +51,11 @@ def generate_docs(**kwargs):
         paginate=False,
     )
 
-    logging.info(f'Received response list of runs from dbt cloud - {runs}')  # change later
+    logging.info(f'Received response list of runs from dbt cloud')
+    logging.info(f'Parsing the runs')
 
     for run in runs.json()['data']:
+        logging.info(f'Checking run_id {run["id"]}')
         if run['is_success'] is True:
             run_id = run['id']
             break
@@ -97,7 +96,7 @@ def generate_docs(**kwargs):
     logging.info(f'Providing access')
     target_object_name = get_gcs_path_from_local_path(target_workdir + target_file_name)
     target_object_name = target_object_name[
-        target_object_name.find(COMPOSER_BUCKET_NAME) + len(COMPOSER_BUCKET_NAME) + 1]
+        target_object_name.find(COMPOSER_BUCKET_NAME) + len(COMPOSER_BUCKET_NAME) + 1:]
 
     groups = ['bigquery-analytsts@osome.com', 'bigquery-others@osome.com']
 
