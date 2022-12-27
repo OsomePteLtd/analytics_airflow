@@ -98,13 +98,13 @@ def generate_docs(**kwargs):
     target_object_name = target_object_name[
         target_object_name.find(COMPOSER_BUCKET_NAME) + len(COMPOSER_BUCKET_NAME) + 1:]
 
-    groups = ['bigquery-analysts@osome.com', 'bigquery-others@osome.com']
+    acl_entries = ['group-bigquery-analysts@osome.com', 'group-bigquery-others@osome.com']
 
-    for group in groups:
+    for entry in acl_entries:
         gcs_hook.insert_object_acl(
             bucket_name=COMPOSER_BUCKET_NAME,
             object_name=target_object_name,
-            entity=group,
+            entity=entry,
             role='READER'
         )
 
