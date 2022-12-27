@@ -40,14 +40,22 @@ def generate_docs(**kwargs):
     # get manifest.json and catalog.json from API
     logging.info(f'Getting list of runs')
     run_id = None
-    runs = dbt_hook.list_job_runs(
-        job_definition_id=40171,  # id of Scheduled refresh job
-        order_by='-id'
+    # runs = dbt_hook.list_job_runs(
+    #     job_definition_id=40171,  # id of Scheduled refresh job
+    #     order_by='-id'
+    # )
+    runs = dbt_hook._run_and_get_response(
+        endpoint=f"{None}/runs/",
+        payload={
+            "job_definition_id": 40171,
+            "order_by": '-id',
+        },
+        paginate=False,
     )
 
     logging.info(f'Received response list of runs from dbt cloud - {runs}')  # change later
 
-    for run in runs[0].json()['data']:
+    for run in runs.json()['data']:
         if run['is_success'] is True:
             run_id = run['id']
             break
