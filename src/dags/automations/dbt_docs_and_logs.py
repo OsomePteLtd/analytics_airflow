@@ -1,11 +1,12 @@
 from airflow import DAG
+from airflow.exceptions import AirflowSkipException
 from airflow.operators.dummy import DummyOperator
 from airflow.operators.python import PythonOperator
 
 import json
 import logging
 import pendulum
-from datetime import timedelta, datetime
+from datetime import timedelta
 
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 
@@ -30,12 +31,13 @@ jumpcloud_dag = DAG(
 
 
 def generate_docs(**kwargs):
-    # init hooks
-    logging.info(f'Initializing hooks')
+    # init hooks and etc
+    logging.info(f'Initializing hooks and etc')
 
     dbt_hook = DbtCloudHook()
     gcs_hook = GCSHook()
     logging.info(f'Hooks are initialized')
+    source_workdir = get_dag_workdir_path_from_context(context=kwargs, sub_path='source_files')
 
     # get manifest.json and catalog.json from API
     logging.info(f'Getting list of runs')
@@ -65,6 +67,16 @@ def generate_docs(**kwargs):
     if run_id is None:
         raise ValueError(f'Failed to find successful run withing last 100 runs')
 
+    with open(source_workdir + 'state.json', 'r') as f:
+        try:
+            state = json.load(f)
+        except json.JSONDecodeError:
+            state = {'last_run_id': -1}
+
+    if state['last_run_id'] == run_id:
+        logging.info(f'Current run id is the same as previous one')
+        raise AirflowSkipException
+
     logging.info(f'Requesting artifacts')
     manifest_json = dbt_hook.get_job_run_artifact(run_id=run_id, path='manifest.json').json()
     catalog_json = dbt_hook.get_job_run_artifact(run_id=run_id, path='catalog.json').json()
@@ -72,7 +84,6 @@ def generate_docs(**kwargs):
 
     # read index.html from GCS
     logging.info(f'Getting source index')
-    source_workdir = get_dag_workdir_path_from_context(context=kwargs, sub_path='source_files')
 
     with open(source_workdir + 'index.html', 'r') as f:
         content_index = f.read()
@@ -96,7 +107,7 @@ def generate_docs(**kwargs):
     logging.info(f'Providing access')
     target_object_name = get_gcs_path_from_local_path(target_workdir + target_file_name)
     target_object_name = target_object_name[
-        target_object_name.find(COMPOSER_BUCKET_NAME) + len(COMPOSER_BUCKET_NAME) + 1:]
+                         target_object_name.find(COMPOSER_BUCKET_NAME) + len(COMPOSER_BUCKET_NAME) + 1:]
 
     acl_entries = ['group-bigquery-analysts@osome.com', 'group-bigquery-others@osome.com']
 
@@ -107,6 +118,10 @@ def generate_docs(**kwargs):
             entity=entry,
             role='READER'
         )
+
+    #  Saving last run_id
+    with open(source_workdir + 'state.json', 'w') as f:
+        json.dump(state, f)
 
     logging.info(f'All done')
 
