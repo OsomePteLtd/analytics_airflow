@@ -98,7 +98,7 @@ def generate_docs(**kwargs):
     target_object_name = target_object_name[
         target_object_name.find(COMPOSER_BUCKET_NAME) + len(COMPOSER_BUCKET_NAME) + 1:]
 
-    groups = ['bigquery-analytsts@osome.com', 'bigquery-others@osome.com']
+    groups = ['bigquery-analysts@osome.com', 'bigquery-others@osome.com']
 
     for group in groups:
         gcs_hook.insert_object_acl(
