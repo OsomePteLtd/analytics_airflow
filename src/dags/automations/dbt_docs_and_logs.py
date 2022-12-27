@@ -67,11 +67,11 @@ def generate_docs(**kwargs):
     if run_id is None:
         raise ValueError(f'Failed to find successful run withing last 100 runs')
 
-    with open(source_workdir + 'state.json', 'r') as f:
-        try:
+    try:
+        with open(source_workdir + 'state.json', 'r') as f:
             state = json.load(f)
-        except json.JSONDecodeError:
-            state = {'last_run_id': -1}
+    except IOError:
+        state = {'last_run_id': -1}
 
     if state['last_run_id'] == run_id:
         logging.info(f'Current run id is the same as previous one')
@@ -120,7 +120,7 @@ def generate_docs(**kwargs):
         )
 
     #  Saving last run_id
-    with open(source_workdir + 'state.json', 'w') as f:
+    with open(source_workdir + 'state.json', 'w+') as f:
         json.dump(state, f)
 
     logging.info(f'All done')
