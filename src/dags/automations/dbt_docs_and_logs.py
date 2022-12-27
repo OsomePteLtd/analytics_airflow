@@ -26,7 +26,7 @@ jumpcloud_dag = DAG(
     default_args=default_args,
     description='Automation for dbt cloud that generates docs and stores them on GCS and sends logs to GitHub '
                 'PR comments',
-    schedule_interval='0 2 * * *',
+    schedule_interval='*/5 * * * *',
     dagrun_timeout=timedelta(minutes=20))
 
 
