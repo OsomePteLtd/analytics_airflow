@@ -76,6 +76,8 @@ def generate_docs(**kwargs):
     if state['last_run_id'] == run_id:
         logging.info(f'Current run id is the same as previous one')
         raise AirflowSkipException
+    else:
+        state['last_run_id'] = run_id
 
     logging.info(f'Requesting artifacts')
     manifest_json = dbt_hook.get_job_run_artifact(run_id=run_id, path='manifest.json').json()
