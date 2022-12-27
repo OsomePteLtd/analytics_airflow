@@ -44,8 +44,9 @@ def generate_docs(**kwargs):
     #     job_definition_id=40171,  # id of Scheduled refresh job
     #     order_by='-id'
     # )
+    account_id = dbt_hook.connection.login
     runs = dbt_hook._run_and_get_response(
-        endpoint=f"{None}/runs/",
+        endpoint=f"{account_id}/runs/",
         payload={
             "job_definition_id": 40171,
             "order_by": '-id',
