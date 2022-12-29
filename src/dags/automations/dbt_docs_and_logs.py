@@ -137,6 +137,8 @@ def send_logs(**kwargs):
             include_related=['run_steps', 'job', 'trigger', 'debug_logs']
         ).json()['data']
 
+        logging.info(f'Received info about run_id: {run_id}')
+
         github_pr_id = run_dict['trigger']['github_pull_request_id']
         execute_steps = run_dict['job']['execute_steps']
         run_steps = run_dict['run_steps'][3:]
@@ -150,6 +152,7 @@ def send_logs(**kwargs):
         logs = None
         debug_logs = None
 
+        logging.info(f'Building message...')
         for i in range(0, len(execute_steps)):
             status = f'[{run_steps[i]["status_humanized"]}]'
             step = f'''{status:<10} {execute_steps}\n'''
@@ -165,6 +168,8 @@ def send_logs(**kwargs):
         logs_file_name = f'logs/{file_name}-logs.log'
         debug_logs_file_name = f'logs/{file_name}-debug_logs.log'
 
+        logging.info(f'Uploading files to GCS, filepath:\n{logs_file_name}\n{debug_logs_file_name}')
+
         gcs.upload(
             bucket_name=bucket_name,
             object_name=logs_file_name,
@@ -176,11 +181,15 @@ def send_logs(**kwargs):
             data=debug_logs,
         )
 
+        logging.info(f'Upload done')
+
         logs_gcs_url = f'https://storage.cloud.google.com/{bucket_name}/{logs_file_name}'
         debug_logs_gcs_url = f'https://storage.cloud.google.com/{bucket_name}/{debug_logs_file_name}'
 
         message += f'\n(Download logs)[{logs_gcs_url}]' \
                    f'\n(Download debug_logs)[{debug_logs_gcs_url}]'
+
+        logging.info(f'Sending message to PR {github_pr_id}, message:\n{message}')
 
         # send message to PR with link
         response = gh.create_issue_comment(
@@ -189,8 +198,10 @@ def send_logs(**kwargs):
             body=message
         )
 
+        logging.info(f'Response completed')
+
         if response.ok is False:
-            logging.error(f'While trying to create PR message - request was returned with not ok status:'
+            logging.error(f'While trying to create PR message - response was returned with not ok status:'
                           f'{response}\n{response.reason}\n{response.text}\n')
 
             raise ValueError('Response not ok')
@@ -202,10 +213,11 @@ def send_logs(**kwargs):
     github_hook = GitHubHook()
 
     source_workdir = get_dag_workdir_path_from_context(context=kwargs, sub_path='source_files')
+    state_file_path = source_workdir + 'logs_state.json'
 
     # get last run_id from state
     try:
-        with open(source_workdir + 'logs_state.json', 'r') as f:
+        with open(state_file_path, 'r') as f:
             state = json.load(f)
     except IOError:
         state = {'last_run_id': 107622624}  # one of the last runs
@@ -268,12 +280,12 @@ def send_logs(**kwargs):
 
         # save state for the last chronologically processed run
         state['last_run_id'] = run
-        with open(source_workdir + 'logs_state.json', 'w+') as f:
+        with open(state_file_path, 'w+') as f:
             json.dump(state, f)
 
     # save last processed run id
     state['last_run_id'] = current_last_run_id
-    with open(source_workdir + 'logs_state.json', 'w+') as f:
+    with open(state_file_path, 'w+') as f:
         json.dump(state, f)
 
 
