@@ -140,6 +140,7 @@ def send_logs(**kwargs):
         github_pr_id = run_dict['trigger']['github_pull_request_id']
         execute_steps = run_dict['job']['execute_steps']
         run_steps = run_dict['run_steps'][3:]
+        file_name = f'PR-{github_pr_id}-RUN-{run_id}-STEP-'
 
         message = f'''DBT Cloud PR check launched at {run_dict['created_at'][:-13]} was failed.
         You can find run steps statuses and logs below. 
@@ -155,11 +156,31 @@ def send_logs(**kwargs):
             message += step
 
             if run_steps[i]['status_humanized'] == 'Error':
+                file_name += run_steps[i]['id']
                 logs = run_steps[i]['logs']
                 debug_logs = run_steps[i]['debug_logs']
 
         # upload logs to gsc
-        # gcs.insert_object_acl()
+        bucket_name = 'osome-dbt-failed-logs'
+        logs_file_name = f'logs/{file_name}-logs.log'
+        debug_logs_file_name = f'logs/{file_name}-debug_logs.log'
+
+        gcs.upload(
+            bucket_name=bucket_name,
+            object_name=logs_file_name,
+            data=logs,
+        )
+        gcs.upload(
+            bucket_name=bucket_name,
+            object_name=debug_logs_file_name,
+            data=debug_logs,
+        )
+
+        logs_gcs_url = f'https://storage.cloud.google.com/{bucket_name}/{logs_file_name}'
+        debug_logs_gcs_url = f'https://storage.cloud.google.com/{bucket_name}/{debug_logs_file_name}'
+
+        message += f'\n(Download logs)[{logs_gcs_url}]' \
+                   f'\n(Download debug_logs)[{debug_logs_gcs_url}]'
 
         # send message to PR with link
         response = gh.create_issue_comment(
@@ -172,6 +193,7 @@ def send_logs(**kwargs):
             logging.error(f'While trying to create PR message - request was returned with not ok status:'
                           f'{response}\n{response.reason}\n{response.text}\n')
 
+            raise ValueError('Response not ok')
 
     # init hooks
     logging.info(f'Initializing hooks and etc')
@@ -263,4 +285,9 @@ with jumpcloud_dag as dag:
         provide_context=True,
         python_callable=generate_docs)
 
-    init >> [docs]
+    logs = PythonOperator(
+        task_id='logs',
+        provide_context=True,
+        python_callable=send_logs)
+
+    init >> [docs, logs]
