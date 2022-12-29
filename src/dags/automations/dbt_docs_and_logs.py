@@ -134,7 +134,7 @@ def send_logs(**kwargs):
     def process_and_send(run_id: int, dbt: DbtCloudHook, gcs: GCSHook, gh: GitHubHook):
         run_dict = dbt.get_job_run(
             run_id=run_id,
-            include_related=['run_steps', 'job', 'trigger', 'debug_logs']
+            include_related="['run_steps','job','trigger','debug_logs']"
         ).json()['data']
 
         logging.info(f'Received info about run_id: {run_id}')
