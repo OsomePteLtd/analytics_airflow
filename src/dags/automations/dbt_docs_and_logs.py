@@ -145,10 +145,9 @@ def send_logs(**kwargs):
         run_steps = run_dict['run_steps'][3:]
         file_name = f'PR-{github_pr_id}-RUN-{run_id}-STEP-'
 
-        message = f'''DBT Cloud PR check launched at {run_dict['created_at'][:-13]} was failed.
-        You can find run steps statuses and logs below. 
+        message = f"DBT Cloud PR check launched at {run_dict['created_at'][:-13]} was failed.\n" \
+                  f"You can find run steps statuses and logs below:"
     
-        '''
 
         logs = None
         debug_logs = None
@@ -156,7 +155,7 @@ def send_logs(**kwargs):
         logging.info(f'Building message...')
         for i in range(0, len(execute_steps)):
             status = f'[{run_steps[i]["status_humanized"]}]'
-            step = f'''{status:<10} {execute_steps}\n'''
+            step = f'`{status:<9} {execute_steps[i]}`\n'
             message += step
 
             if run_steps[i]['status_humanized'] == 'Error':
@@ -187,8 +186,9 @@ def send_logs(**kwargs):
         logs_gcs_url = f'https://storage.cloud.google.com/{bucket_name}/{logs_file_name}'
         debug_logs_gcs_url = f'https://storage.cloud.google.com/{bucket_name}/{debug_logs_file_name}'
 
-        message += f'\n(Download logs)[{logs_gcs_url}]' \
-                   f'\n(Download debug_logs)[{debug_logs_gcs_url}]'
+        message += f'\n[**Open logs of failed step**]({logs_gcs_url})' \
+                   f'\n[**Open debug_logs of failed step**]({debug_logs_gcs_url})' \
+                   f'\n<sub>Right click + \'Save Link As...\' to download</sub>'
 
         logging.info(f'Sending message to PR {github_pr_id}, message:\n{message}')
 
