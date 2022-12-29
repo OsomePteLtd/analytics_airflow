@@ -269,7 +269,7 @@ def send_logs(**kwargs):
 
             if run['is_error'] is True:
                 logging.info(f'Run is failed, adding to the failed list')
-                failed_runs.append(run)
+                failed_runs.append(run['id'])
 
     if current_last_run_id is None:
         logging.info(f'Found 0 new runs, skipping')
