@@ -205,7 +205,7 @@ def send_logs(**kwargs):
 
     # get last run_id from state
     try:
-        with open(source_workdir + 'state.json', 'r') as f:
+        with open(source_workdir + 'logs_state.json', 'r') as f:
             state = json.load(f)
     except IOError:
         state = {'last_run_id': 107622624}  # one of the last runs
@@ -246,7 +246,7 @@ def send_logs(**kwargs):
                 logging.info(f'Run is incomplete, skipping')
                 continue
 
-            if run['id'] == last_prev_run_id:
+            if run['id'] <= last_prev_run_id:
                 logging.info(f'Reached last prev run_id, breaking')
                 cycle_trigger = False
                 break
@@ -268,12 +268,12 @@ def send_logs(**kwargs):
 
         # save state for the last chronologically processed run
         state['last_run_id'] = run
-        with open(source_workdir + 'state.json', 'w+') as f:
+        with open(source_workdir + 'logs_state.json', 'w+') as f:
             json.dump(state, f)
 
     # save last processed run id
     state['last_run_id'] = current_last_run_id
-    with open(source_workdir + 'state.json', 'w+') as f:
+    with open(source_workdir + 'logs_state.json', 'w+') as f:
         json.dump(state, f)
 
 
