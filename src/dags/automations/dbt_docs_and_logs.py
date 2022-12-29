@@ -138,6 +138,7 @@ def send_logs(**kwargs):
         ).json()['data']
 
         logging.info(f'Received info about run_id: {run_id}')
+        logging.info(run_dict)
 
         github_pr_id = run_dict['trigger']['github_pull_request_id']
         execute_steps = run_dict['job']['execute_steps']
