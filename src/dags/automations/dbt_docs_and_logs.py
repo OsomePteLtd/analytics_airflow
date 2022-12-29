@@ -11,6 +11,7 @@ from datetime import timedelta
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 
 from utils.config import COMPOSER_BUCKET_NAME
+from utils.hooks.github_hook import GitHubHook
 from utils.utils import task_fail_slack_alert, get_dag_workdir_path_from_context, get_gcs_path_from_local_path
 from airflow.providers.dbt.cloud.hooks.dbt import DbtCloudHook
 
@@ -26,7 +27,8 @@ jumpcloud_dag = DAG(
     default_args=default_args,
     description='Automation for dbt cloud that generates docs and stores them on GCS and sends logs to GitHub '
                 'PR comments',
-    schedule_interval='*/5 * * * *',
+    # schedule_interval='*/5 * * * *',
+    schedule_interval='@once',
     dagrun_timeout=timedelta(minutes=20))
 
 
@@ -126,6 +128,131 @@ def generate_docs(**kwargs):
         json.dump(state, f)
 
     logging.info(f'All done')
+
+
+def send_logs(**kwargs):
+    def process_and_send(run_id: int, dbt: DbtCloudHook, gcs: GCSHook, gh: GitHubHook):
+        run_dict = dbt.get_job_run(
+            run_id=run_id,
+            include_related=['run_steps', 'job', 'trigger', 'debug_logs']
+        ).json()['data']
+
+        github_pr_id = run_dict['trigger']['github_pull_request_id']
+        execute_steps = run_dict['job']['execute_steps']
+        run_steps = run_dict['run_steps'][3:]
+
+        message = f'''DBT Cloud PR check launched at {run_dict['created_at'][:-13]} was failed.
+        You can find run steps statuses and logs below. 
+    
+        '''
+
+        logs = None
+        debug_logs = None
+
+        for i in range(0, len(execute_steps)):
+            status = f'[{run_steps[i]["status_humanized"]}]'
+            step = f'''{status:<10} {execute_steps}\n'''
+            message += step
+
+            if run_steps[i]['status_humanized'] == 'Error':
+                logs = run_steps[i]['logs']
+                debug_logs = run_steps[i]['debug_logs']
+
+        # upload logs to gsc
+        # gcs.insert_object_acl()
+
+        # send message to PR with link
+        response = gh.create_issue_comment(
+            repo='analytics_dbt',
+            issue_number=github_pr_id,
+            body=message
+        )
+
+        if response.ok is False:
+            logging.error(f'While trying to create PR message - request was returned with not ok status:'
+                          f'{response}\n{response.reason}\n{response.text}\n')
+
+
+    # init hooks
+    logging.info(f'Initializing hooks and etc')
+    dbt_hook = DbtCloudHook()
+    gcs_hook = GCSHook()
+    github_hook = GitHubHook()
+
+    source_workdir = get_dag_workdir_path_from_context(context=kwargs, sub_path='source_files')
+
+    # get last run_id from state
+    try:
+        with open(source_workdir + 'state.json', 'r') as f:
+            state = json.load(f)
+    except IOError:
+        state = {'last_run_id': 107622624}  # one of the last runs
+
+    # paginate through runs, stop when see last run_id
+    account_id = dbt_hook.connection.login
+
+    last_prev_run_id = state['last_run_id']
+    logging.info(f'Last found run_id - {last_prev_run_id}')
+
+    current_last_run_id = None
+    cycle_trigger = True
+    limit_size = 5
+    offset = 0
+
+    failed_runs = []
+
+    while cycle_trigger is True:
+        runs = dbt_hook._run_and_get_response(
+            endpoint=f"{account_id}/runs/",
+            payload={
+                "job_definition_id": 40560,
+                "order_by": '-id',
+                "limit": limit_size,
+                "offset": offset
+            },
+            paginate=False,
+        )
+
+        offset += limit_size
+
+        runs_list = runs.json()['data']
+        logging.info(f'Received {len(runs_list)}, iterating over them')
+
+        for run in runs_list:
+            logging.info(f'Checking {run["id"]}')
+            if run['is_complete'] is False:
+                logging.info(f'Run is incomplete, skipping')
+                continue
+
+            if run['id'] == last_prev_run_id:
+                logging.info(f'Reached last prev run_id, breaking')
+                cycle_trigger = False
+                break
+
+            if run['is_complete'] is True and current_last_run_id is None:
+                logging.info(f'Preliminary saved current last run_id')
+                current_last_run_id = run['id']
+
+            if run['is_error'] is True:
+                logging.info(f'Run is failed, adding to the failed list')
+                failed_runs.append(run)
+
+    if current_last_run_id is None:
+        logging.info(f'Found 0 new runs, skipping')
+        raise AirflowSkipException
+
+    for run in failed_runs[::-1]:
+        process_and_send(run_id=run, dbt=dbt_hook, gcs=gcs_hook, gh=github_hook)
+
+        # save state for the last chronologically processed run
+        state['last_run_id'] = run
+        with open(source_workdir + 'state.json', 'w+') as f:
+            json.dump(state, f)
+
+    # save last processed run id
+    state['last_run_id'] = current_last_run_id
+    with open(source_workdir + 'state.json', 'w+') as f:
+        json.dump(state, f)
 
 
 with jumpcloud_dag as dag:
