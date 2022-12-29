@@ -138,7 +138,7 @@ def send_logs(**kwargs):
         ).json()['data']
 
         logging.info(f'Received info about run_id: {run_id}')
-        logging.info(run_dict)
+        logging.debug(run_dict)
 
         github_pr_id = run_dict['trigger']['github_pull_request_id']
         execute_steps = run_dict['job']['execute_steps']
@@ -160,7 +160,7 @@ def send_logs(**kwargs):
             message += step
 
             if run_steps[i]['status_humanized'] == 'Error':
-                file_name += run_steps[i]['id']
+                file_name += str(run_steps[i]['id'])
                 logs = run_steps[i]['logs']
                 debug_logs = run_steps[i]['debug_logs']
 
