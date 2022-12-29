@@ -146,7 +146,7 @@ def send_logs(**kwargs):
         file_name = f'PR-{github_pr_id}-RUN-{run_id}-STEP-'
 
         message = f"DBT Cloud PR check launched at {run_dict['created_at'][:-13]} was failed.\n" \
-                  f"You can find run steps statuses and logs below:"
+                  f"You can find run steps statuses and logs below:\n```\n"
     
 
         logs = None
@@ -155,13 +155,15 @@ def send_logs(**kwargs):
         logging.info(f'Building message...')
         for i in range(0, len(execute_steps)):
             status = f'[{run_steps[i]["status_humanized"]}]'
-            step = f'`{status:<9} {execute_steps[i]}`\n'
+            step = f'{status:<9} {execute_steps[i]}\n'
             message += step
 
             if run_steps[i]['status_humanized'] == 'Error':
                 file_name += str(run_steps[i]['id'])
                 logs = run_steps[i]['logs']
                 debug_logs = run_steps[i]['debug_logs']
+
+        message += '```'
 
         # upload logs to gsc
         bucket_name = 'osome-dbt-failed-logs'
