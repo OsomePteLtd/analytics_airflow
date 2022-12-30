@@ -7,8 +7,6 @@ from airflow.hooks.base import BaseHook
 from datetime import datetime
 from typing import Optional, Union
 from requests.models import Response
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
 
 import jwt
 import time
