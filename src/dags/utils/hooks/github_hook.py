@@ -31,8 +31,7 @@ class GitHubHook(BaseHook):
         self.host = conn.host
 
         # authentication related
-        self._private_key = conn.password
-        self._alt_private_key = conn.extra_dejson['PEM_KEY']
+        self._make_private_key()
         self._app_id = conn.extra_dejson['app_id']
         self._app_installation_id = conn.extra_dejson['installation_id']
         self._access_token_filepath = get_workdir_in_data_folder('hooks/github/') + 'access_token.json'
@@ -69,13 +68,7 @@ class GitHubHook(BaseHook):
             'iss': self._app_id,
         }
 
-        private_key = self._private_key
-        try:
-            private_key = serialization.load_pem_private_key(
-                private_key.encode(), password=None, backend=default_backend())
-        except ValueError:
-            private_key = serialization.load_pem_private_key(
-                self._alt_private_key.encode(), password=None, backend=default_backend())
+        private_key = self._private_key.encode()
 
         encoded = jwt.encode(payload, private_key, algorithm='RS256')
         jwt_token = encoded.decode()
@@ -98,6 +91,12 @@ class GitHubHook(BaseHook):
         logging.info(f'New token is valid until {str(access_token["expires_at"])}')
 
         return access_token
+
+    def _make_private_key(self):
+        with open(get_workdir_in_data_folder('hooks/github/') + 'somefile.txt', 'r') as f:
+            private_key = f.read()
+
+        self._private_key = private_key
 
     def create_issue_comment(self, repo: str, issue_number: int, body: str, owner: str = 'OsomePteLtd') -> Response:
         """
