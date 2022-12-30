@@ -3,15 +3,15 @@ API reference: https://clockify.me/developers-api
 """
 
 from airflow.hooks.base import BaseHook
-import requests
+
+from datetime import datetime
+from typing import Optional, Union
+from requests.models import Response
 import jwt
 import time
-from datetime import datetime
 import json
 import logging
-from typing import Optional, Union
-
-from requests.models import Response
+import requests
 
 from utils.utils import get_workdir_in_data_folder
 
@@ -33,7 +33,7 @@ class GitHubHook(BaseHook):
         self._app_installation_id = conn.extra_dejson['installation_id']
         self._access_token_filepath = get_workdir_in_data_folder('hooks/github/') + 'access_token.json'
 
-        logging.info(f"GitHub hook initialized with private key '{self._private_key[:25]}***' and "
+        logging.info(f"GitHub hook initialized with private key '{self._private_key[:45]}***' and "
                      f"installation_id {self._app_installation_id} ")
 
         super().__init__(*args, **kwargs)
@@ -65,9 +65,9 @@ class GitHubHook(BaseHook):
             'iss': self._app_id,
         }
 
-        private_key_contents = self._private_key.encode()
+        private_key = self._private_key
 
-        encoded = jwt.encode(payload, private_key_contents, algorithm='RS256')
+        encoded = jwt.encode(payload, private_key, algorithm='RS256')
         jwt_token = encoded.decode()
 
         url = f"{self.host}/app/installations/{self._app_installation_id}/access_tokens"
