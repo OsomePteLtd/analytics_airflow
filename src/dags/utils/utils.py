@@ -6,6 +6,19 @@ from airflow.providers.slack.hooks.slack_webhook import SlackWebhookHook
 from utils.config import DATA_FOLDER_PATH, SLACK_CONN_ID, COMPOSER_BUCKET_NAME
 
 
+def get_workdir_in_data_folder(sub_path):
+    full_path = os.path.join(DATA_FOLDER_PATH, sub_path)
+
+    if full_path[-1] != '/':
+        full_path += '/'
+
+    if not os.path.exists(full_path):
+        path = Path(full_path)
+        path.mkdir(parents=True, exist_ok=True)
+
+    return full_path
+
+
 def get_dag_workdir_path_from_dag_obj(dag_obj, sub_path: str = '') -> str:
     """
     Function that creates workdir and returns its path from the DAG object
@@ -20,16 +33,9 @@ def get_dag_workdir_path_from_dag_obj(dag_obj, sub_path: str = '') -> str:
     if len(sub_path) > 0 and sub_path[0] == '/':
         sub_path = sub_path[1:]
 
-    full_path = os.path.join(DATA_FOLDER_PATH, dag_id, sub_path)
+    path = os.path.join(dag_id, sub_path)
 
-    if full_path[-1] != '/':
-        full_path += '/'
-
-    if not os.path.exists(full_path):
-        path = Path(full_path)
-        path.mkdir(parents=True, exist_ok=True)
-
-    return full_path
+    return get_workdir_in_data_folder(path)
 
 
 def get_dag_workdir_path_from_context(context, sub_path: str = '') -> str:

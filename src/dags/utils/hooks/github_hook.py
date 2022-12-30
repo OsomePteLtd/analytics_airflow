@@ -4,13 +4,16 @@ API reference: https://clockify.me/developers-api
 
 from airflow.hooks.base import BaseHook
 import requests
-import pandas as pd
-from io import StringIO
+import jwt
+import time
 from datetime import datetime
+import json
 import logging
 from typing import Optional, Union
 
 from requests.models import Response
+
+from utils.utils import get_workdir_in_data_folder
 
 
 class GitHubHook(BaseHook):
@@ -23,12 +26,68 @@ class GitHubHook(BaseHook):
         conn = self.get_connection(conn_id)
 
         self.host = conn.host
-        self._api_key = conn.password
-        self._auth_headers = {'Authorization': f'Bearer {self._api_key}'}
 
-        logging.info(f"GitHub hook initialized with API key '{self._api_key[:5]}***' ")
+        # authentication related
+        self._private_key = conn.password
+        self._app_id = conn.extra_dejson['app_id']
+        self._app_installation_id = conn.extra_dejson['installation_id']
+        self._access_token_filepath = get_workdir_in_data_folder('hooks/github/') + 'access_token.json'
+
+        logging.info(f"GitHub hook initialized with private key '{self._private_key[:25]}***' and "
+                     f"installation_id {self._app_installation_id} ")
 
         super().__init__(*args, **kwargs)
+
+    @property
+    def _auth_headers(self):
+        logging.info('Reading access token from GCS')
+        try:
+            with open(self._access_token_filepath) as f:
+                token = json.load(f)
+
+                if datetime.fromisoformat(token['expires_at'][:-1]) < datetime.utcnow():
+                    logging.warning(f'Token got expired, raising FileNotFoundError')
+                    raise FileNotFoundError
+
+        except FileNotFoundError:
+            token = self._refresh_access_token()
+
+        token = token['token']
+
+        return {'Authorization': f'Bearer {token}'}
+
+    def _refresh_access_token(self) -> dict:
+        logging.info(f'Refreshing GH token')
+        current_time = int(time.time())
+        payload = {
+            'iat': current_time,
+            'exp': current_time + (1 * 60),
+            'iss': self._app_id,
+        }
+
+        private_key_contents = self._private_key.encode()
+
+        encoded = jwt.encode(payload, private_key_contents, algorithm='RS256')
+        jwt_token = encoded.decode()
+
+        url = f"{self.host}/app/installations/{self._app_installation_id}/access_tokens"
+
+        headers = {
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {jwt_token}",
+            "Content-Type": "application/json"
+        }
+
+        response = requests.request("POST", url, headers=headers)
+
+        access_token = response.json()
+
+        with open(self._access_token_filepath, 'w+') as f:
+            json.dump(access_token, f)
+
+        logging.info(f'New token is valid until {str(access_token["expires_at"])}')
+
+        return access_token
 
     def create_issue_comment(self, repo: str, issue_number: int, body: str, owner: str = 'OsomePteLtd') -> Response:
         """

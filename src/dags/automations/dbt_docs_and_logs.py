@@ -145,7 +145,7 @@ def send_logs(**kwargs):
         run_steps = run_dict['run_steps'][3:]
         file_name = f'PR-{github_pr_id}-RUN-{run_id}-STEP-'
 
-        message = f"DBT Cloud PR check launched at {run_dict['created_at'][:-13]} was failed.\n" \
+        message = f"DBT Cloud PR check launched at {run_dict['created_at'][:-13]} (run_id {run_id}) was failed.\n" \
                   f"You can find run steps statuses and logs below:\n```\n"
     
 
@@ -192,7 +192,7 @@ def send_logs(**kwargs):
                    f'\n[**Open debug_logs of failed step**]({debug_logs_gcs_url})' \
                    f'\n<sub>Right click + \'Save Link As...\' to download</sub>'
 
-        logging.info(f'Sending message to PR {github_pr_id}, message:\n{message}')
+        logging.info(f'Sending message to PR {github_pr_id}')
 
         # send message to PR with link
         response = gh.create_issue_comment(
@@ -201,7 +201,7 @@ def send_logs(**kwargs):
             body=message
         )
 
-        logging.info(f'Response completed')
+        logging.info(f'Response received')
 
         if response.ok is False:
             logging.error(f'While trying to create PR message - response was returned with not ok status:'
