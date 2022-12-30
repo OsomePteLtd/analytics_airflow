@@ -32,12 +32,13 @@ class GitHubHook(BaseHook):
 
         # authentication related
         self._private_key = conn.password
+        self._alt_private_key = conn.extra_dejson['PEM_KEY']
         self._app_id = conn.extra_dejson['app_id']
         self._app_installation_id = conn.extra_dejson['installation_id']
         self._access_token_filepath = get_workdir_in_data_folder('hooks/github/') + 'access_token.json'
 
-        logging.info(f"GitHub hook initialized with private key '{self._private_key[:45]}***' and "
-                     f"installation_id {self._app_installation_id} ")
+        logging.info(f"GitHub hook initialized with private key '{self._private_key[:45]}***{self._private_key[-45:]}' "
+                     f"and installation_id {self._app_installation_id} ")
 
         super().__init__(*args, **kwargs)
 
@@ -69,8 +70,12 @@ class GitHubHook(BaseHook):
         }
 
         private_key = self._private_key
-        private_key = serialization.load_pem_private_key(
-            private_key.encode(), password=None, backend=default_backend())
+        try:
+            private_key = serialization.load_pem_private_key(
+                private_key.encode(), password=None, backend=default_backend())
+        except ValueError:
+            private_key = serialization.load_pem_private_key(
+                self._alt_private_key.encode(), password=None, backend=default_backend())
 
         encoded = jwt.encode(payload, private_key, algorithm='RS256')
         jwt_token = encoded.decode()
