@@ -7,6 +7,9 @@ from airflow.hooks.base import BaseHook
 from datetime import datetime
 from typing import Optional, Union
 from requests.models import Response
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+
 import jwt
 import time
 import json
@@ -66,6 +69,8 @@ class GitHubHook(BaseHook):
         }
 
         private_key = self._private_key
+        private_key = serialization.load_pem_private_key(
+            private_key.encode(), password=None, backend=default_backend())
 
         encoded = jwt.encode(payload, private_key, algorithm='RS256')
         jwt_token = encoded.decode()
